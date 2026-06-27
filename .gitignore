@@ -1,0 +1,15 @@
+.gradle/
+local.properties
+.idea/
+*.iml
+build/
+captures/
+.DS_Store
+/app/build/
+/gradle-dist/
+/tools/**/build/
+.kotlin/
+
+# Herramientas ajenas al proyecto que quedaron en el directorio (no son fuente)
+/squashfs-root/
+/AM-INSTALLER

@@ -1,0 +1,1782 @@
+{
+  "schema": "content_package",
+  "importMode": "additive",
+  "packageId": "ethereum_unidad_2_mapa_transaccion_content_package_v1",
+  "schemaVersion": 1,
+  "seedVersion": null,
+  "generatedAt": 1781392203434,
+  "contentHash": "11f737c04489fcce1091685c48133244e2bab91472f5bb849809d1a4d879cc05",
+  "origin": "IMPORTED",
+  "courses": [
+    {
+      "courseId": "ethereum",
+      "title": "ETHEREUM",
+      "description": "Modelo mental de Ethereum.",
+      "version": 1,
+      "updatedAt": 1781347354255
+    }
+  ],
+  "units": [
+    {
+      "unitId": "eth_unidad_2",
+      "courseId": "ethereum",
+      "title": "Unidad 2: Mapa de una transaccion desde el usuario hasta la finalizacion",
+      "description": "Mapa conceptual del recorrido de una transacción: intención, firma, broadcast, mempool, inclusión, ejecución, cambio de estado, consenso y finality.",
+      "orderIndex": 2,
+      "version": 1,
+      "updatedAt": 1781392203434
+    }
+  ],
+  "outcomes": [
+    {
+      "outcomeId": "eth_u2_outcome_ciclo_operacional",
+      "unitId": "eth_unidad_2",
+      "title": "Ordenar el ciclo completo de una transacción",
+      "description": "Distinguir intención, preparación, firma, transmisión, pendiente, inclusión, ejecución y finality.",
+      "version": 1,
+      "updatedAt": 1781392203434
+    },
+    {
+      "outcomeId": "eth_u2_outcome_pendiente_inclusion",
+      "unitId": "eth_unidad_2",
+      "title": "Separar firma, broadcast, mempool e inclusión",
+      "description": "Explicar qué cambia y qué no cambia en cada etapa previa a la ejecución aceptada.",
+      "version": 1,
+      "updatedAt": 1781392203434
+    },
+    {
+      "outcomeId": "eth_u2_outcome_ejecucion_resultados",
+      "unitId": "eth_unidad_2",
+      "title": "Relacionar ejecución, cambio de estado, receipts, logs e indexers",
+      "description": "Distinguir resultado de ejecución, estado real y representaciones externas.",
+      "version": 1,
+      "updatedAt": 1781392203434
+    },
+    {
+      "outcomeId": "eth_u2_outcome_consenso_finality",
+      "unitId": "eth_unidad_2",
+      "title": "Distinguir consenso, attestations, justification, reorgs y finality",
+      "description": "Separar ejecución de aceptación por consenso y finalización formal.",
+      "version": 1,
+      "updatedAt": 1781392203434
+    }
+  ],
+  "nodes": [
+    {
+      "nodeId": "eth_u2_ciclo_firma_broadcast",
+      "courseId": "ethereum",
+      "unitId": "eth_unidad_2",
+      "outcomeIds": [
+        "eth_u2_outcome_ciclo_operacional",
+        "eth_u2_outcome_pendiente_inclusion"
+      ],
+      "title": "Ciclo inicial: intención, wallet, firma y broadcast",
+      "coreClaim": "La transacción empieza como una intención preparada y firmada por la wallet, pero solo se vuelve conocida por la red cuando se transmite; ninguna de esas etapas equivale a ejecución ni finality.",
+      "type": "PROCESS",
+      "weightExam": 0.85,
+      "prerequisites": [
+        "eth_modelo_mental"
+      ],
+      "facets": [
+        "PROCESO_PASO_A_PASO",
+        "DIFERENCIA_ENTRE_CONCEPTOS",
+        "DEFINICION_FUNCIONAL",
+        "ERROR_TIPICO"
+      ],
+      "mustKnow": [
+        "orden_ciclo_transaccion",
+        "firma_autoriza_no_garantiza",
+        "broadcast_transmite_no_finaliza",
+        "rpc_no_reemplaza_consenso"
+      ],
+      "commonErrors": [
+        "confundir firma con inclusión",
+        "confundir enviada por wallet con cambio de estado",
+        "creer que RPC equivale a finality"
+      ],
+      "minimumMasteryDefinition": "Ordena las primeras etapas y distingue autorización, transmisión, pendiente, inclusión, ejecución y finality.",
+      "surfaceEasyReady": true,
+      "surfaceEasyItemCount": 6,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434
+    },
+    {
+      "nodeId": "eth_u2_mempool_pendiente",
+      "courseId": "ethereum",
+      "unitId": "eth_unidad_2",
+      "outcomeIds": [
+        "eth_u2_outcome_pendiente_inclusion"
+      ],
+      "title": "Mempool y estado pendiente",
+      "coreClaim": "La mempool es una visión local de transacciones pendientes conocidas por un nodo; estar allí no ejecuta ni cambia el estado aceptado.",
+      "type": "CONCEPT",
+      "weightExam": 0.75,
+      "prerequisites": [
+        "eth_modelo_mental"
+      ],
+      "facets": [
+        "DEFINICION_FUNCIONAL",
+        "DIFERENCIA_ENTRE_CONCEPTOS",
+        "CASO_LIMITE",
+        "ERROR_TIPICO"
+      ],
+      "mustKnow": [
+        "mempool_es_local",
+        "pendiente_no_cambia_estado",
+        "sin_inclusion_no_hay_estado_aceptado"
+      ],
+      "commonErrors": [
+        "creer que existe una mempool universal idéntica",
+        "confundir pendiente con ejecutada",
+        "creer que algunos nodos viendo una transacción implica finality"
+      ],
+      "minimumMasteryDefinition": "Explica que pendiente en mempool no es inclusión, ejecución ni cambio de estado aceptado.",
+      "surfaceEasyReady": true,
+      "surfaceEasyItemCount": 4,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434
+    },
+    {
+      "nodeId": "eth_u2_inclusion_builder_proposer",
+      "courseId": "ethereum",
+      "unitId": "eth_unidad_2",
+      "outcomeIds": [
+        "eth_u2_outcome_pendiente_inclusion",
+        "eth_u2_outcome_consenso_finality"
+      ],
+      "title": "Builder, proposer e inclusión en bloque",
+      "coreClaim": "La inclusión ocurre cuando la transacción aparece en un bloque propuesto; construir o proponer contenido no decide por sí solo la cadena final.",
+      "type": "PROCESS",
+      "weightExam": 0.8,
+      "prerequisites": [
+        "eth_modelo_mental"
+      ],
+      "facets": [
+        "DEFINICION_FUNCIONAL",
+        "DIFERENCIA_ENTRE_CONCEPTOS",
+        "PROCESO_PASO_A_PASO",
+        "CASO_LIMITE",
+        "ERROR_TIPICO"
+      ],
+      "mustKnow": [
+        "builder_no_decide_cadena_canonica",
+        "inclusion_es_en_bloque_propuesto",
+        "inclusion_no_elimina_reorg"
+      ],
+      "commonErrors": [
+        "creer que builder decide finality",
+        "confundir inclusión con irreversibilidad",
+        "ignorar riesgo de reorg antes de finality"
+      ],
+      "minimumMasteryDefinition": "Distingue selección, propuesta, inclusión, aceptación por consenso y riesgo de reorg.",
+      "surfaceEasyReady": true,
+      "surfaceEasyItemCount": 5,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434
+    },
+    {
+      "nodeId": "eth_u2_ejecucion_estado_receipts",
+      "courseId": "ethereum",
+      "unitId": "eth_unidad_2",
+      "outcomeIds": [
+        "eth_u2_outcome_ejecucion_resultados"
+      ],
+      "title": "Ejecución, cambio de estado, receipts, logs e indexers",
+      "coreClaim": "La ejecución calcula efectos sobre el estado; receipts, logs e indexers ayudan a observar resultados, pero no sustituyen el estado real ni el consenso.",
+      "type": "CONCEPT",
+      "weightExam": 0.82,
+      "prerequisites": [
+        "eth_modelo_mental"
+      ],
+      "facets": [
+        "DEFINICION_FUNCIONAL",
+        "CAUSA_EFECTO",
+        "DIFERENCIA_ENTRE_CONCEPTOS",
+        "ERROR_TIPICO"
+      ],
+      "mustKnow": [
+        "ejecucion_calcula_efecto_estado",
+        "cambio_estado_resulta_de_ejecucion_valida",
+        "receipts_logs_no_sustituyen_estado",
+        "indexer_no_es_fuente_final"
+      ],
+      "commonErrors": [
+        "confundir ejecución con finality",
+        "creer que logs reemplazan estado",
+        "creer que indexer define verdad de protocolo"
+      ],
+      "minimumMasteryDefinition": "Separa ejecución, cambio de estado, registros de resultado y visualizaciones externas.",
+      "surfaceEasyReady": true,
+      "surfaceEasyItemCount": 6,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434
+    },
+    {
+      "nodeId": "eth_u2_consenso_finality",
+      "courseId": "ethereum",
+      "unitId": "eth_unidad_2",
+      "outcomeIds": [
+        "eth_u2_outcome_consenso_finality"
+      ],
+      "title": "Consenso, attestations, justification, finality y reorgs",
+      "coreClaim": "El consenso decide qué cadena se acepta; attestations, justification y finality son etapas de consenso separadas de ejecución, receipts y confirmaciones prácticas de wallets.",
+      "type": "CONCEPT",
+      "weightExam": 0.9,
+      "prerequisites": [
+        "eth_modelo_mental"
+      ],
+      "facets": [
+        "DEFINICION_FUNCIONAL",
+        "DIFERENCIA_ENTRE_CONCEPTOS",
+        "PROCESO_PASO_A_PASO",
+        "CASO_LIMITE",
+        "ERROR_TIPICO"
+      ],
+      "mustKnow": [
+        "attestation_es_voto_consenso",
+        "justification_no_es_finality",
+        "finality_es_consenso_no_wallet",
+        "reorg_separa_ejecucion_de_aceptacion"
+      ],
+      "commonErrors": [
+        "confundir attestation con receipt",
+        "confundir confirmada en wallet con finality formal",
+        "creer que bloque ejecutable queda necesariamente finalizado"
+      ],
+      "minimumMasteryDefinition": "Distingue votos de consenso, etapas hacia finality, garantías de finalización y reorgs.",
+      "surfaceEasyReady": true,
+      "surfaceEasyItemCount": 7,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434
+    }
+  ],
+  "items": [
+    {
+      "itemId": "eth_u2_ciclo_firma_broadcast__q01",
+      "nodeId": "eth_u2_ciclo_firma_broadcast",
+      "facet": "PROCESO_PASO_A_PASO",
+      "format": "MULTIPLE_CHOICE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.4,
+      "itemRole": "CORE",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Cuál secuencia representa mejor el ciclo conceptual completo de una transacción?",
+      "correctAnswer": "Intención del usuario → wallet prepara → firma → broadcast → posible mempool → inclusión en bloque → ejecución → cambio de estado → proceso de consenso → finality.",
+      "feedbackShort": "La transacción avanza por etapas. Firmar, enviar, estar pendiente, ser incluida, ejecutarse y finalizar no son lo mismo.",
+      "coversMustKnow": [
+        "orden_ciclo_transaccion"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [
+        {
+          "id": "a",
+          "text": "Finality → firma → mempool → broadcast → ejecución.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Intención del usuario → wallet prepara → firma → broadcast → posible mempool → inclusión en bloque → ejecución → cambio de estado → proceso de consenso → finality.",
+          "isCorrect": true
+        },
+        {
+          "id": "c",
+          "text": "Mempool → usuario firma → wallet crea finality → ejecución → broadcast.",
+          "isCorrect": false
+        },
+        {
+          "id": "d",
+          "text": "Receipt → logs → firma → intención del usuario → consenso.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ciclo_firma_broadcast__q02",
+      "nodeId": "eth_u2_ciclo_firma_broadcast",
+      "facet": "ERROR_TIPICO",
+      "format": "CHOOSE_FALSE_STATEMENT",
+      "frictionLevel": 1,
+      "difficultySeed": 0.45,
+      "itemRole": "TRAP",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Cuál afirmación es falsa sobre la firma?",
+      "correctAnswer": "La firma garantiza por sí sola que la transacción será incluida en un bloque.",
+      "feedbackShort": "Firmar significa autorizar. No garantiza transmisión, inclusión, ejecución ni finalización.",
+      "coversMustKnow": [
+        "firma_autoriza_no_garantiza"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [
+        "confundir firma con inclusión"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "La firma autoriza una operación.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "La firma ayuda a distinguir una operación autorizada de una inventada por otro actor.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "La firma garantiza por sí sola que la transacción será incluida en un bloque.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "La firma no equivale a ejecución ni a finality.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ciclo_firma_broadcast__q03",
+      "nodeId": "eth_u2_ciclo_firma_broadcast",
+      "facet": "DIFERENCIA_ENTRE_CONCEPTOS",
+      "format": "TRUE_FALSE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.3,
+      "itemRole": "VARIANT",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "Una transacción puede estar firmada correctamente y aun así no ser conocida por la red si nunca fue transmitida.",
+      "correctAnswer": "Verdadero",
+      "feedbackShort": "La firma y el broadcast son etapas distintas. La red conoce la transacción recién cuando se transmite hacia ella.",
+      "coversMustKnow": [
+        "firma_autoriza_no_garantiza",
+        "broadcast_transmite_no_finaliza"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ciclo_firma_broadcast__q04",
+      "nodeId": "eth_u2_ciclo_firma_broadcast",
+      "facet": "DEFINICION_FUNCIONAL",
+      "format": "MULTIPLE_CHOICE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.35,
+      "itemRole": "CORE",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Qué significa broadcast en este módulo?",
+      "correctAnswer": "La transmisión de una transacción hacia la red.",
+      "feedbackShort": "Broadcast es propagación inicial. No implica por sí mismo que la transacción haya sido incluida o ejecutada.",
+      "coversMustKnow": [
+        "broadcast_transmite_no_finaliza"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [
+        {
+          "id": "a",
+          "text": "La finalización formal de una transacción por consenso.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "La transmisión de una transacción hacia la red.",
+          "isCorrect": true
+        },
+        {
+          "id": "c",
+          "text": "El registro del resultado de una ejecución.",
+          "isCorrect": false
+        },
+        {
+          "id": "d",
+          "text": "El voto de un validador sobre la cadena.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ciclo_firma_broadcast__q05",
+      "nodeId": "eth_u2_ciclo_firma_broadcast",
+      "facet": "ERROR_TIPICO",
+      "format": "CHOOSE_FALSE_STATEMENT",
+      "frictionLevel": 1,
+      "difficultySeed": 0.45,
+      "itemRole": "TRAP",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Cuál afirmación es falsa sobre una transacción enviada por una wallet mediante un servicio de acceso como un RPC provider?",
+      "correctAnswer": "El envío por RPC equivale automáticamente a finality.",
+      "feedbackShort": "RPC provider puede servir como vía de acceso, pero no convierte una transacción en finalizada.",
+      "coversMustKnow": [
+        "rpc_no_reemplaza_consenso"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [
+        "creer que RPC equivale a finality"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Puede haber sido transmitida hacia Ethereum.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Puede no haber sido incluida todavía en un bloque.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "El envío por RPC equivale automáticamente a finality.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "La wallet o el RPC provider no reemplazan el proceso de inclusión, ejecución y consenso.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ciclo_firma_broadcast__q06",
+      "nodeId": "eth_u2_ciclo_firma_broadcast",
+      "facet": "ERROR_TIPICO",
+      "format": "TRUE_FALSE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.35,
+      "itemRole": "VARIANT",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "Que una wallet muestre una transacción como \"enviada\" prueba necesariamente que el estado de Ethereum ya cambió.",
+      "correctAnswer": "Falso",
+      "feedbackShort": "\"Enviada\" puede indicar transmisión. El cambio de estado requiere inclusión y ejecución dentro de la historia aceptada.",
+      "coversMustKnow": [
+        "broadcast_transmite_no_finaliza",
+        "rpc_no_reemplaza_consenso"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_mempool_pendiente__q07",
+      "nodeId": "eth_u2_mempool_pendiente",
+      "facet": "DEFINICION_FUNCIONAL",
+      "format": "MULTIPLE_CHOICE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.35,
+      "itemRole": "CORE",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Qué es la mempool según lo visto?",
+      "correctAnswer": "El conjunto local de transacciones pendientes que un nodo conoce y que todavía no están incluidas en un bloque.",
+      "feedbackShort": "La mempool es local a la visión de cada nodo. No todos los nodos tienen necesariamente la misma mempool.",
+      "coversMustKnow": [
+        "mempool_es_local"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [
+        {
+          "id": "a",
+          "text": "Un registro final de transacciones ya finalizadas.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Una lista universal idéntica para todos los nodos.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "El conjunto local de transacciones pendientes que un nodo conoce y que todavía no están incluidas en un bloque.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "La capa social que decide upgrades.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_mempool_pendiente__q08",
+      "nodeId": "eth_u2_mempool_pendiente",
+      "facet": "ERROR_TIPICO",
+      "format": "CHOOSE_FALSE_STATEMENT",
+      "frictionLevel": 1,
+      "difficultySeed": 0.45,
+      "itemRole": "TRAP",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Cuál afirmación es falsa sobre la mempool?",
+      "correctAnswer": "Estar en mempool significa que la transacción ya cambió el estado.",
+      "feedbackShort": "La mempool no ejecuta transacciones ni cambia el estado. Es una etapa previa a la inclusión.",
+      "coversMustKnow": [
+        "pendiente_no_cambia_estado"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [
+        "confundir pendiente con ejecutada"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Una transacción en mempool puede estar pendiente.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Una transacción puede estar en la mempool de un nodo y no en la de otro.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "Estar en mempool significa que la transacción ya cambió el estado.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "Estar en mempool no equivale a estar incluida en un bloque.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_mempool_pendiente__q09",
+      "nodeId": "eth_u2_mempool_pendiente",
+      "facet": "DEFINICION_FUNCIONAL",
+      "format": "TRUE_FALSE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.3,
+      "itemRole": "VARIANT",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "No existe una única mempool universal perfectamente idéntica para todos los nodos.",
+      "correctAnswer": "Verdadero",
+      "feedbackShort": "Cada nodo puede conocer un conjunto distinto de transacciones pendientes.",
+      "coversMustKnow": [
+        "mempool_es_local"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_mempool_pendiente__q10",
+      "nodeId": "eth_u2_mempool_pendiente",
+      "facet": "CASO_LIMITE",
+      "format": "MULTIPLE_CHOICE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.45,
+      "itemRole": "CORE",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "Una transacción fue firmada, transmitida y vista como pendiente por algunos nodos, pero nunca fue incluida en un bloque. ¿Cuál afirmación es más precisa?",
+      "correctAnswer": "Pudo haber sido conocida como pendiente, pero no produjo cambio de estado aceptado.",
+      "feedbackShort": "Firma, broadcast y mempool no bastan para producir cambio de estado dentro de Ethereum.",
+      "coversMustKnow": [
+        "sin_inclusion_no_hay_estado_aceptado"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [
+        {
+          "id": "a",
+          "text": "Cambió el estado porque ya estaba firmada.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Alcanzó finality porque algunos nodos la vieron.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "Pudo haber sido conocida como pendiente, pero no produjo cambio de estado aceptado.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "Fue ejecutada por la wallet.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_inclusion_builder_proposer__q11",
+      "nodeId": "eth_u2_inclusion_builder_proposer",
+      "facet": "ERROR_TIPICO",
+      "format": "CHOOSE_FALSE_STATEMENT",
+      "frictionLevel": 1,
+      "difficultySeed": 0.45,
+      "itemRole": "TRAP",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Cuál afirmación es falsa sobre builder, proposer y consenso?",
+      "correctAnswer": "El builder decide automáticamente la cadena canónica por haber construido contenido.",
+      "feedbackShort": "Construir contenido de bloque no equivale a decidir la cadena aceptada.",
+      "coversMustKnow": [
+        "builder_no_decide_cadena_canonica"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [
+        "creer que builder decide finality"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Un builder puede construir contenido de bloque.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Un proposer es el validador con turno de proponer bloque.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "El consenso determina qué cadena se acepta.",
+          "isCorrect": false
+        },
+        {
+          "id": "d",
+          "text": "El builder decide automáticamente la cadena canónica por haber construido contenido.",
+          "isCorrect": true
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_inclusion_builder_proposer__q12",
+      "nodeId": "eth_u2_inclusion_builder_proposer",
+      "facet": "DIFERENCIA_ENTRE_CONCEPTOS",
+      "format": "TRUE_FALSE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.3,
+      "itemRole": "VARIANT",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "Que un builder seleccione una transacción para un bloque significa automáticamente que esa transacción alcanzó finality.",
+      "correctAnswer": "Falso",
+      "feedbackShort": "Selección, inclusión, ejecución y finality son etapas diferentes.",
+      "coversMustKnow": [
+        "builder_no_decide_cadena_canonica"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_inclusion_builder_proposer__q13",
+      "nodeId": "eth_u2_inclusion_builder_proposer",
+      "facet": "DEFINICION_FUNCIONAL",
+      "format": "MULTIPLE_CHOICE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.35,
+      "itemRole": "CORE",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Qué significa inclusión en bloque?",
+      "correctAnswer": "Que la transacción aparece dentro de un bloque propuesto.",
+      "feedbackShort": "La inclusión es más fuerte que estar en mempool, pero no equivale automáticamente a finality.",
+      "coversMustKnow": [
+        "inclusion_es_en_bloque_propuesto"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [
+        {
+          "id": "a",
+          "text": "Que el usuario pensó una intención.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Que la transacción fue firmada pero no enviada.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "Que la transacción aparece dentro de un bloque propuesto.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "Que todos los indexers la muestran correctamente.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_inclusion_builder_proposer__q14",
+      "nodeId": "eth_u2_inclusion_builder_proposer",
+      "facet": "ERROR_TIPICO",
+      "format": "CHOOSE_FALSE_STATEMENT",
+      "frictionLevel": 1,
+      "difficultySeed": 0.45,
+      "itemRole": "TRAP",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Cuál afirmación es falsa sobre inclusión en bloque?",
+      "correctAnswer": "La inclusión elimina automáticamente todo riesgo de reorg.",
+      "feedbackShort": "Antes de finality puede existir riesgo de que el consenso termine siguiendo otra rama.",
+      "coversMustKnow": [
+        "inclusion_no_elimina_reorg"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [
+        "confundir inclusión con irreversibilidad",
+        "ignorar riesgo de reorg antes de finality"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Una transacción incluida aparece dentro de un bloque propuesto.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "La inclusión es una etapa posterior a estar solo pendiente.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "La inclusión elimina automáticamente todo riesgo de reorg.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "Una transacción incluida todavía puede no estar finalizada.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_inclusion_builder_proposer__q15",
+      "nodeId": "eth_u2_inclusion_builder_proposer",
+      "facet": "CASO_LIMITE",
+      "format": "TRUE_FALSE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.35,
+      "itemRole": "VARIANT",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "Una transacción incluida en un bloque puede dejar de formar parte de la historia aceptada si ocurre una reorg.",
+      "correctAnswer": "Verdadero",
+      "feedbackShort": "La inclusión no garantiza irreversibilidad. Una reorg puede sacar ese bloque de la cadena aceptada.",
+      "coversMustKnow": [
+        "inclusion_no_elimina_reorg"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ejecucion_estado_receipts__q16",
+      "nodeId": "eth_u2_ejecucion_estado_receipts",
+      "facet": "DEFINICION_FUNCIONAL",
+      "format": "MULTIPLE_CHOICE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.35,
+      "itemRole": "CORE",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Qué hace la ejecución de una transacción?",
+      "correctAnswer": "Calcula el efecto de la transacción sobre el estado bajo reglas de Ethereum.",
+      "feedbackShort": "La ejecución responde qué resultado produce una transacción al procesarse contra el estado.",
+      "coversMustKnow": [
+        "ejecucion_calcula_efecto_estado"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [
+        {
+          "id": "a",
+          "text": "Transmite la transacción hacia la red.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Calcula el efecto de la transacción sobre el estado bajo reglas de Ethereum.",
+          "isCorrect": true
+        },
+        {
+          "id": "c",
+          "text": "Decide por sí sola qué cadena será aceptada para siempre.",
+          "isCorrect": false
+        },
+        {
+          "id": "d",
+          "text": "Muestra una notificación en una wallet.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ejecucion_estado_receipts__q17",
+      "nodeId": "eth_u2_ejecucion_estado_receipts",
+      "facet": "ERROR_TIPICO",
+      "format": "CHOOSE_FALSE_STATEMENT",
+      "frictionLevel": 1,
+      "difficultySeed": 0.5,
+      "itemRole": "TRAP",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Cuál afirmación es falsa sobre ejecución y consenso?",
+      "correctAnswer": "Si un bloque es ejecutable, necesariamente queda finalizado.",
+      "feedbackShort": "Ejecutable no significa finalizado. Ejecución y aceptación por consenso son conceptos distintos.",
+      "coversMustKnow": [
+        "ejecucion_calcula_efecto_estado"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [
+        "confundir ejecución con finality"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "La ejecución calcula cambios de estado.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "El consenso determina qué bloques forman la cadena aceptada.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "Un bloque puede ser ejecutable y aun así no quedar en la cadena aceptada.",
+          "isCorrect": false
+        },
+        {
+          "id": "d",
+          "text": "Si un bloque es ejecutable, necesariamente queda finalizado.",
+          "isCorrect": true
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ejecucion_estado_receipts__q18",
+      "nodeId": "eth_u2_ejecucion_estado_receipts",
+      "facet": "DIFERENCIA_ENTRE_CONCEPTOS",
+      "format": "TRUE_FALSE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.3,
+      "itemRole": "VARIANT",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "La ejecución de una transacción y la finalización de consenso son la misma etapa.",
+      "correctAnswer": "Falso",
+      "feedbackShort": "La ejecución calcula efectos sobre el estado. Finality pertenece al consenso.",
+      "coversMustKnow": [
+        "ejecucion_calcula_efecto_estado"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ejecucion_estado_receipts__q19",
+      "nodeId": "eth_u2_ejecucion_estado_receipts",
+      "facet": "DEFINICION_FUNCIONAL",
+      "format": "MULTIPLE_CHOICE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.35,
+      "itemRole": "CORE",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Qué es un cambio de estado en este módulo?",
+      "correctAnswer": "La diferencia entre la situación anterior y posterior del sistema después de ejecutar una transacción válida.",
+      "feedbackShort": "El cambio de estado es resultado de ejecución bajo reglas del protocolo, no de una simple visualización externa.",
+      "coversMustKnow": [
+        "cambio_estado_resulta_de_ejecucion_valida"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [
+        {
+          "id": "a",
+          "text": "La diferencia entre la situación anterior y posterior del sistema después de ejecutar una transacción válida.",
+          "isCorrect": true
+        },
+        {
+          "id": "b",
+          "text": "Una transacción pendiente en mempool.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "Una notificación de wallet.",
+          "isCorrect": false
+        },
+        {
+          "id": "d",
+          "text": "Una respuesta de un RPC provider.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ejecucion_estado_receipts__q20",
+      "nodeId": "eth_u2_ejecucion_estado_receipts",
+      "facet": "ERROR_TIPICO",
+      "format": "CHOOSE_FALSE_STATEMENT",
+      "frictionLevel": 1,
+      "difficultySeed": 0.45,
+      "itemRole": "TRAP",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Cuál afirmación es falsa sobre receipts y logs?",
+      "correctAnswer": "Los logs reemplazan al estado real de Ethereum.",
+      "feedbackShort": "Logs y receipts ayudan a leer o registrar resultados, pero no sustituyen el estado.",
+      "coversMustKnow": [
+        "receipts_logs_no_sustituyen_estado"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [
+        "creer que logs reemplazan estado"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Un receipt registra información sobre el resultado de ejecución de una transacción incluida.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Los logs pueden ayudar a aplicaciones e indexers a organizar información.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "Los logs reemplazan al estado real de Ethereum.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "Receipt y logs no son la transacción firmada en sí.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_ejecucion_estado_receipts__q21",
+      "nodeId": "eth_u2_ejecucion_estado_receipts",
+      "facet": "DIFERENCIA_ENTRE_CONCEPTOS",
+      "format": "TRUE_FALSE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.3,
+      "itemRole": "VARIANT",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "Un indexer puede organizar información de receipts o logs, pero eso no lo convierte en la fuente final de verdad del protocolo.",
+      "correctAnswer": "Verdadero",
+      "feedbackShort": "El indexer facilita lectura y visualización; no define por sí mismo el estado ni la cadena aceptada.",
+      "coversMustKnow": [
+        "indexer_no_es_fuente_final"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_consenso_finality__q22",
+      "nodeId": "eth_u2_consenso_finality",
+      "facet": "DEFINICION_FUNCIONAL",
+      "format": "MULTIPLE_CHOICE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.35,
+      "itemRole": "CORE",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Qué es una attestation?",
+      "correctAnswer": "Un voto de consenso emitido por un validador sobre la cadena.",
+      "feedbackShort": "Una attestation pertenece al consenso. No es una transacción del usuario ni un receipt.",
+      "coversMustKnow": [
+        "attestation_es_voto_consenso"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [
+        {
+          "id": "a",
+          "text": "Una transacción del usuario.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Un voto de consenso emitido por un validador sobre la cadena.",
+          "isCorrect": true
+        },
+        {
+          "id": "c",
+          "text": "Una operación pendiente en mempool.",
+          "isCorrect": false
+        },
+        {
+          "id": "d",
+          "text": "Un registro del resultado de ejecución.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_consenso_finality__q23",
+      "nodeId": "eth_u2_consenso_finality",
+      "facet": "ERROR_TIPICO",
+      "format": "CHOOSE_FALSE_STATEMENT",
+      "frictionLevel": 1,
+      "difficultySeed": 0.45,
+      "itemRole": "TRAP",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Cuál afirmación es falsa sobre attestations?",
+      "correctAnswer": "Una attestation ejecuta la EVM.",
+      "feedbackShort": "La attestation es voto de consenso; no ejecuta lógica de aplicación.",
+      "coversMustKnow": [
+        "attestation_es_voto_consenso"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [
+        "confundir attestation con receipt"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Una attestation es producida por un validador que vota.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Una attestation está relacionada con el proceso de consenso.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "Una attestation ejecuta la EVM.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "Una attestation no equivale por sí sola a finality.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_consenso_finality__q24",
+      "nodeId": "eth_u2_consenso_finality",
+      "facet": "DIFERENCIA_ENTRE_CONCEPTOS",
+      "format": "TRUE_FALSE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.3,
+      "itemRole": "VARIANT",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "Una attestation es lo mismo que un receipt de ejecución.",
+      "correctAnswer": "Falso",
+      "feedbackShort": "El receipt registra resultado de ejecución; la attestation es un voto de consenso.",
+      "coversMustKnow": [
+        "attestation_es_voto_consenso"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_consenso_finality__q25",
+      "nodeId": "eth_u2_consenso_finality",
+      "facet": "DIFERENCIA_ENTRE_CONCEPTOS",
+      "format": "MULTIPLE_CHOICE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.35,
+      "itemRole": "CORE",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Qué diferencia describe mejor justification y finality?",
+      "correctAnswer": "Justification es una etapa intermedia de consenso con apoyo fuerte; finality es la finalización formal de consenso.",
+      "feedbackShort": "Justification está en el camino hacia finality, pero no son conceptos idénticos.",
+      "coversMustKnow": [
+        "justification_no_es_finality"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [
+        {
+          "id": "a",
+          "text": "Justification es una etapa intermedia de consenso con apoyo fuerte; finality es la finalización formal de consenso.",
+          "isCorrect": true
+        },
+        {
+          "id": "b",
+          "text": "Justification es la firma del usuario; finality es la mempool.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "Justification y finality son exactamente lo mismo.",
+          "isCorrect": false
+        },
+        {
+          "id": "d",
+          "text": "Justification es un log; finality es un receipt.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_consenso_finality__q26",
+      "nodeId": "eth_u2_consenso_finality",
+      "facet": "ERROR_TIPICO",
+      "format": "CHOOSE_FALSE_STATEMENT",
+      "frictionLevel": 1,
+      "difficultySeed": 0.45,
+      "itemRole": "TRAP",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "¿Cuál afirmación es falsa sobre finality?",
+      "correctAnswer": "Finality significa que la wallet preparó correctamente la operación.",
+      "feedbackShort": "Preparar una operación ocurre al inicio; finality ocurre al final del proceso de consenso.",
+      "coversMustKnow": [
+        "finality_es_consenso_no_wallet"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [
+        "confundir confirmada en wallet con finality formal"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Finality pertenece al proceso de consenso.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "Finality no es lo mismo que inclusión en bloque.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "Finality significa que la wallet preparó correctamente la operación.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "Finality da una fuerte garantía económica contra reversión.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_consenso_finality__q27",
+      "nodeId": "eth_u2_consenso_finality",
+      "facet": "DIFERENCIA_ENTRE_CONCEPTOS",
+      "format": "TRUE_FALSE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.35,
+      "itemRole": "VARIANT",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "Una wallet puede mostrar “confirmada” en sentido práctico sin que eso signifique necesariamente finality formal del consenso.",
+      "correctAnswer": "Verdadero",
+      "feedbackShort": "Confirmación económica y finalización de consenso no son equivalentes.",
+      "coversMustKnow": [
+        "finality_es_consenso_no_wallet"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    },
+    {
+      "itemId": "eth_u2_consenso_finality__q28",
+      "nodeId": "eth_u2_consenso_finality",
+      "facet": "CASO_LIMITE",
+      "format": "MULTIPLE_CHOICE",
+      "frictionLevel": 1,
+      "difficultySeed": 0.5,
+      "itemRole": "CORE",
+      "allowedSurfaces": [
+        "IN_APP_QUICK",
+        "IN_APP_DEEP",
+        "BACK_MICRO",
+        "ALARM",
+        "NOTIFICATION",
+        "WIDGET",
+        "SOCIAL_GATE"
+      ],
+      "cooldownHours": 4.0,
+      "stem": "Una transacción fue incluida en un bloque, ese bloque fue ejecutable, pero luego la cadena aceptada siguió otra rama. ¿Cuál afirmación es más precisa?",
+      "correctAnswer": "Puede haber ocurrido una reorg: la ejecución del bloque y su aceptación final por consenso son cosas distintas.",
+      "feedbackShort": "Una reorg no prueba por sí sola invalidez de ejecución; indica que la cadena aceptada terminó siguiendo otra rama.",
+      "coversMustKnow": [
+        "reorg_separa_ejecucion_de_aceptacion"
+      ],
+      "variantGroupId": null,
+      "rescueGroupId": null,
+      "nodeComplexity": null,
+      "facetComplexity": null,
+      "distractorSimilarity": null,
+      "prerequisiteDepth": null,
+      "targetsErrorIds": [],
+      "commonErrorSignals": [],
+      "options": [
+        {
+          "id": "a",
+          "text": "La transacción necesariamente era inválida.",
+          "isCorrect": false
+        },
+        {
+          "id": "b",
+          "text": "La wallet decidió borrar el bloque.",
+          "isCorrect": false
+        },
+        {
+          "id": "c",
+          "text": "Puede haber ocurrido una reorg: la ejecución del bloque y su aceptación final por consenso son cosas distintas.",
+          "isCorrect": true
+        },
+        {
+          "id": "d",
+          "text": "Los logs reemplazaron finality.",
+          "isCorrect": false
+        }
+      ],
+      "version": 1,
+      "updatedAt": 1781392203434,
+      "sourceRefs": [
+        "ethereum_unidad_2_mapa_transaccion_usuario_finalizacion_v1"
+      ]
+    }
+  ]
+}

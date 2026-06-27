@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">App de Estudio</string>
+    <string name="cognitive_notification_channel_name">Notificación cognitiva</string>
+    <string name="cognitive_notification_channel_description">Recordatorios cognitivos para entrar al flujo de estudio cuando hay temas pendientes.</string>
+</resources>

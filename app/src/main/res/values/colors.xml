@@ -1,0 +1,8 @@
+<resources>
+    <color name="study_bg">#F5F0E8</color>
+    <color name="study_surface">#FFF9F1</color>
+    <color name="study_text">#1D1B16</color>
+    <color name="study_primary">#0D5C63</color>
+    <color name="study_secondary">#AF3800</color>
+    <color name="study_tertiary">#2C6E49</color>
+</resources>
