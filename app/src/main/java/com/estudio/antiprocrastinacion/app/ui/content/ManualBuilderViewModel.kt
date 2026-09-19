@@ -3,6 +3,9 @@ package com.estudio.antiprocrastinacion.app.ui.content
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.estudio.antiprocrastinacion.app.data.importing.EditableImportPreparationService
+import com.estudio.antiprocrastinacion.app.data.importing.ExistingCourseCompilationTarget
+import com.estudio.antiprocrastinacion.app.data.importing.ExistingUnitCompilationTarget
+import com.estudio.antiprocrastinacion.app.data.importing.ReviewedQuestionBankCompilationContext
 import com.estudio.antiprocrastinacion.app.data.importing.normalizeTrueFalseAnswer
 import com.estudio.antiprocrastinacion.app.data.importing.slugKey
 import com.estudio.antiprocrastinacion.app.domain.repository.ContentRepository
@@ -18,9 +21,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/** Minimum number of complete quick questions a unit needs so it really enters daily spaced repetition. */
-const val MANUAL_MIN_QUICK_QUESTIONS = 4
-
 /** Maximum options allowed for a choice question (matches the reviewed contract: 2..6). */
 private const val MANUAL_MAX_OPTIONS = 6
 
@@ -35,21 +35,26 @@ data class ManualCourseOption(
     val title: String,
 )
 
+data class ManualExistingUnitOption(
+    val draftKey: String,
+    val title: String,
+)
+
 /** Per-unit, human-facing readiness used to gate saving and to drive the "casi listo" guidance. */
 data class ManualUnitReadiness(
     val unitIndex: Int,
     val title: String,
-    val quickComplete: Int,
-    val needQuick: Int,
+    val completeCount: Int,
     val incompleteCount: Int,
 ) {
-    val isReady: Boolean = needQuick == 0 && incompleteCount == 0
+    val isReady: Boolean = completeCount > 0 && incompleteCount == 0
 }
 
 data class ManualBuilderUiState(
     val step: ManualBuilderStep = ManualBuilderStep.COURSE,
     val isWorking: Boolean = false,
     val existingCourses: List<ManualCourseOption> = emptyList(),
+    val existingUnits: List<ManualExistingUnitOption> = emptyList(),
     val courseChosen: Boolean = false,
     val courseIsExisting: Boolean = false,
     val courseTitle: String = "",
@@ -78,6 +83,8 @@ class ManualBuilderViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ManualBuilderUiState())
     val uiState = _uiState.asStateFlow()
+    private var compilationContext = ReviewedQuestionBankCompilationContext()
+    private var existingUnitTargets: Map<String, ExistingUnitCompilationTarget> = emptyMap()
 
     init {
         refreshCourses()
@@ -104,10 +111,13 @@ class ManualBuilderViewModel(
         // slug: dedupe the key against existing course ids so the new course is always distinct.
         val existingCourseIds = _uiState.value.existingCourses.map { it.courseId }.toSet()
         val key = dedupeKey(cleanTitle.slugKey("curso"), existingCourseIds)
+        compilationContext = ReviewedQuestionBankCompilationContext()
+        existingUnitTargets = emptyMap()
         _uiState.value =
             _uiState.value.copy(
                 courseChosen = true,
                 courseIsExisting = false,
+                existingUnits = emptyList(),
                 courseTitle = cleanTitle,
                 courseKey = key,
                 existingUnitLocalKeys = emptySet(),
@@ -135,17 +145,70 @@ class ManualBuilderViewModel(
             _uiState.value = _uiState.value.copy(isWorking = true)
             val tree = contentRepository.getContentTree()
             val course = tree.courses.firstOrNull { it.course.courseId == option.courseId }
-            val existingLocalKeys =
+            val usedDraftKeys = mutableSetOf<String>()
+            val targets = linkedMapOf<String, ExistingUnitCompilationTarget>()
+            val existingUnits =
                 course
                     ?.units
-                    ?.mapNotNull { unit -> localUnitKey(unit.unit.unitId, option.courseId) }
-                    ?.toSet()
-                    .orEmpty()
+                    ?.sortedBy { it.unit.orderIndex }
+                    ?.map { unitWithOutcomes ->
+                        val unit = unitWithOutcomes.unit
+                        val suggestedDraftKey =
+                            localUnitKey(unit.unitId, option.courseId)
+                                ?: unit.title.slugKey("unidad_existente")
+                        val draftKey = dedupeKey(suggestedDraftKey, usedDraftKeys)
+                        usedDraftKeys += draftKey
+                        val existingOutcomeIds = unitWithOutcomes.outcomes.map { it.outcome.outcomeId }.toSet()
+                        val existingNodeIds =
+                            unitWithOutcomes.outcomes
+                                .flatMap { it.nodes }
+                                .map { it.nodeId }
+                                .toSet()
+                        targets[draftKey] =
+                            ExistingUnitCompilationTarget(
+                                unitId = unit.unitId,
+                                courseId = unit.courseId,
+                                title = unit.title,
+                                description = unit.description,
+                                orderIndex = unit.orderIndex,
+                                version = unit.version,
+                                updatedAt = unit.updatedAt,
+                                newOutcomeId =
+                                    dedupeKey(
+                                        base = "${unit.unitId}__resolver_preguntas_manual",
+                                        used = existingOutcomeIds,
+                                    ),
+                                newNodeId =
+                                    dedupeKey(
+                                        base = "${unit.unitId}__contenido_manual",
+                                        used = existingNodeIds,
+                                    ),
+                            )
+                        ManualExistingUnitOption(draftKey = draftKey, title = unit.title)
+                    }.orEmpty()
+            val existingLocalKeys = existingUnits.map { it.draftKey }.toSet()
+            existingUnitTargets = targets
+            compilationContext =
+                ReviewedQuestionBankCompilationContext(
+                    existingCourse =
+                        course?.course?.let {
+                            ExistingCourseCompilationTarget(
+                                courseId = it.courseId,
+                                title = it.title,
+                                description = it.description,
+                                version = it.version,
+                                updatedAt = it.updatedAt,
+                            )
+                        },
+                    nextNewUnitOrderIndex =
+                        (course?.units?.maxOfOrNull { it.unit.orderIndex } ?: -1) + 1,
+                )
             _uiState.value =
                 _uiState.value.copy(
                     isWorking = false,
                     courseChosen = true,
                     courseIsExisting = true,
+                    existingUnits = existingUnits,
                     courseTitle = course?.course?.title ?: option.title,
                     courseKey = option.courseId,
                     existingUnitLocalKeys = existingLocalKeys,
@@ -169,6 +232,39 @@ class ManualBuilderViewModel(
     }
 
     // ---- Unit step --------------------------------------------------------------------------
+
+    fun chooseExistingUnit(option: ManualExistingUnitOption) {
+        if (_uiState.value.isWorking) return
+        val current = _uiState.value
+        val existingDraftIndex = current.draft.units.indexOfFirst { it.key == option.draftKey }
+        if (existingDraftIndex >= 0) {
+            editUnit(existingDraftIndex)
+            return
+        }
+        val target = existingUnitTargets[option.draftKey] ?: return
+        val newUnit =
+            ReviewedEditableUnitDraft(
+                title = target.title,
+                key = option.draftKey,
+                keySource = ReviewedStableKeySource.EXPLICIT,
+                questions = listOf(newQuestion(emptyList())),
+            )
+        val units = current.draft.units + newUnit
+        compilationContext =
+            compilationContext.copy(
+                existingUnits = compilationContext.existingUnits + (option.draftKey to target),
+            )
+        _uiState.value =
+            current.copy(
+                draft = current.draft.copy(units = units),
+                currentUnitIndex = units.lastIndex,
+                step = ManualBuilderStep.QUESTIONS,
+                softError = null,
+                saved = false,
+                showAlmostReady = false,
+            )
+        recomputeReadiness()
+    }
 
     fun createUnit(title: String) {
         if (_uiState.value.isWorking) return
@@ -385,9 +481,14 @@ class ManualBuilderViewModel(
 
     private fun doImport() {
         val draft = withCompiledDefaults(_uiState.value.draft)
+        val currentCompilationContext = compilationContext
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isWorking = true, softError = null, showAlmostReady = false)
-            val prepared = preparationService.prepare(draft = draft)
+            val prepared =
+                preparationService.prepare(
+                    draft = draft,
+                    compilationContext = currentCompilationContext,
+                )
             val json = prepared.contentPackageJson
             if (prepared.canImport && json != null) {
                 val result =
@@ -446,7 +547,7 @@ class ManualBuilderViewModel(
     private fun recomputeReadiness() {
         _uiState.value =
             _uiState.value.copy(
-                readiness = computeManualReadiness(_uiState.value.draft, MANUAL_MIN_QUICK_QUESTIONS),
+                readiness = computeManualReadiness(_uiState.value.draft),
             )
     }
 
@@ -473,15 +574,6 @@ class ManualBuilderViewModel(
 
 // ---- Pure helpers (unit-tested) -------------------------------------------------------------
 
-internal val MANUAL_QUICK_FORMATS =
-    setOf(
-        ReviewedQuestionFormat.TRUE_FALSE,
-        ReviewedQuestionFormat.MULTIPLE_CHOICE,
-        ReviewedQuestionFormat.CHOOSE_FALSE_STATEMENT,
-    )
-
-internal fun questionIsQuick(question: ReviewedEditableQuestionDraft): Boolean = question.format in MANUAL_QUICK_FORMATS
-
 internal fun questionIsComplete(question: ReviewedEditableQuestionDraft): Boolean {
     if (question.stem.isBlank()) return false
     return when (question.format) {
@@ -502,16 +594,14 @@ internal fun questionIsComplete(question: ReviewedEditableQuestionDraft): Boolea
 
 internal fun computeManualReadiness(
     draft: ReviewedEditableImportDraft,
-    minQuick: Int,
 ): List<ManualUnitReadiness> =
     draft.units.mapIndexed { index, unit ->
-        val quickComplete = unit.questions.count { questionIsQuick(it) && questionIsComplete(it) }
+        val complete = unit.questions.count(::questionIsComplete)
         val incomplete = unit.questions.count { !questionIsComplete(it) }
         ManualUnitReadiness(
             unitIndex = index,
             title = unit.title,
-            quickComplete = quickComplete,
-            needQuick = (minQuick - quickComplete).coerceAtLeast(0),
+            completeCount = complete,
             incompleteCount = incomplete,
         )
     }

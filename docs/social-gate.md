@@ -17,24 +17,40 @@ Archivos clave:
   Tarjetas pendientes, mas boton de escape.
 - `app/socialgate/SocialGateMonitorService.kt` — Foreground Service `specialUse`
   que detecta el foreground via `UsageStatsManager` (sin accesibilidad) y alimenta
-  al coordinador. `SocialGateServiceController` lo arranca (app, boot, regla);
-  `SocialGateBootReceiver` lo re-arma tras reiniciar.
+  al coordinador. Publica la pantalla en la Activity y la vuelve a traer al frente
+  mientras el gate siga activo. `SocialGateServiceController` lo arranca (app,
+  boot, regla); `SocialGateBootReceiver` lo re-arma tras reiniciar.
 - `app/socialgate/UsageStatsForegroundReader.kt` + `ForegroundEventResolver.kt` —
   detección del paquete en primer plano (la logica pura es testeable).
-- `app/socialgate/SocialGateOverlayHost.kt` — render del overlay (`TYPE_APPLICATION_OVERLAY`,
-  requiere `SYSTEM_ALERT_WINDOW`) y cableado de callbacks.
+- `app/socialgate/SocialGateActivityHost.kt` — `StateFlow` de presentación,
+  callbacks y estado real de foco de la única Activity.
 
 NOTA: el gate ya NO usa accesibilidad. En HyperOS/MIUI quedaba "configurada pero
-inactiva" (el binding se auto-revoca). Ahora depende de dos permisos que persisten
-(Acceso de uso + Mostrar sobre otras apps) y de un FGS que se auto-recupera.
+inactiva" (el binding se auto-revoca). Tampoco crea una ventana
+`TYPE_APPLICATION_OVERLAY`: el gate se dibuja dentro de `MainActivity`, por lo que
+Android no genera la notificación de sistema "se muestra sobre otras apps" que
+enlaza directamente a revocar la superposición. `SYSTEM_ALERT_WINDOW` se mantiene
+solo para que Android permita el background Activity launch.
 
 GATE INESCAPABLE: el gate se dispara al abrir una app social, pero una vez arriba
-queda ENCIMA de cualquier app (Home, otra app, etc.) hasta resolverlo (estudiar) o
-usar el comodín de escape. La decisión vive en `InescapableGateDecision` (puro,
-testeable): cede solo ante la propia app de estudio y ante teléfono/llamadas. El
-servicio re-muestra `coordinator.activeGatePrompt()` mientras siga sin resolver.
+la Activity vuelve al frente si se intenta ir a Home, Recientes, notificaciones u
+otra app, hasta resolverlo (estudiar) o usar el comodín de escape. El monitor pulsa
+cada 500 ms y limita `startActivity` a un intento cada 750 ms para no producir una
+tormenta de relanzamientos. El sondeo comienza solo después de recibir la primera
+foto de reglas y vuelve a evaluar el foreground cuando esas reglas cambian, incluso
+si el paquete visible no cambió. La decisión vive en `InescapableGateDecision` (puro,
+testeable): cede ante teléfono/llamadas, pantalla apagada y lock screen.
+
+LIMITE DE PLATAFORMA: en un telefono personal Android siempre conserva salidas de
+sistema como forzar detencion, el boton Stop de "Apps activas", revocar permisos,
+modo seguro o desinstalar. Una app ordinaria no puede eliminar esas salidas. Este
+gate elimina los atajos que controlamos y la notificacion revocadora del alert
+window; acercarse a kiosk/device-owner requeriria un dispositivo administrado y
+sigue fuera del alcance del MVP.
 
 ## 1. Contrato actual
+
+El gate social permanece **permanentemente activo** para todas las aplicaciones soportadas (`Instagram`, `TikTok`, `X`). No existe switch de apagado ni estado inactivo en la UI ni en la persistencia. `SocialGateSchedule.normalizeRule` y `LocalSocialGateRepository` fuerzan incondicionalmente `enabled = true` para toda regla procesada o almacenada, preservando frecuencias y ventanas horarias configurables.
 
 El gate reutiliza o abre la sesion QUICK de `Tarjetas pendientes`. Cuando una
 app social pasa a foreground y el gate esta due:
@@ -45,7 +61,7 @@ app social pasa a foreground y el gate esta due:
 4. Si no existe QUICK activa, el gate abre `Tarjetas pendientes` con
    `startQuickSession()`.
 5. Si no hay deuda real pendiente para `Tarjetas pendientes`, el gate no aplica:
-   no bloquea, no abre overlay y no inventa preguntas.
+   no bloquea, no abre la pantalla del gate y no inventa preguntas.
 
 Las sesiones `DEEP` y `DRAIN` nunca se montan como gate ni se reemplazan. Si hay
 una sesion profunda activa y tambien deuda real de Tarjetas pendientes, el gate
@@ -80,7 +96,7 @@ permanecer real-only:
 
 El gate se desbloquea solo cuando la sesion de Tarjetas pendientes termina sin
 errores reales vivos. Mientras `SessionTransition.Advanced` devuelva otra
-pregunta, el overlay sigue bloqueando. Cuando `SessionTransition.Completed`
+pregunta, la pantalla sigue bloqueando. Cuando `SessionTransition.Completed`
 confirma que no queda deuda real pendiente, se muestra el feedback de la ultima
 respuesta y el boton pasa a `Desbloquear app`.
 
@@ -92,7 +108,7 @@ sesion QUICK, no un objetivo artificial de "correctas por gate".
 El comodin de escape permite desbloquear la app social actual sin terminar el
 repaso:
 
-- aparece pequeno, en la esquina inferior del overlay, solo si hay un uso disponible;
+- aparece pequeno, en la esquina inferior del gate, solo si hay un uso disponible;
 - el texto del boton es solo `Escape`, sin contador: si esta visible se puede usar; si
   no, no se muestra;
 - al tocarlo abre confirmacion con la proxima fecha disponible;
@@ -117,6 +133,6 @@ El limite vive en `SocialGateEscape.MAX_USES_PER_WEEK`.
   carril social separado cuando el gate real esta due.
 - Mantener tests unitarios para que el scheduler legacy no acepte fillers,
   rescues ni tarjetas futuras como gate.
-- Los tests UI/instrumentados del overlay siguen sujetos a la salvaguarda del
-  dispositivo MIUI: no correr instrumentados ni reinstalar sin preflight y
-  aprobacion explicita.
+- Los tests UI/instrumentados del gate siguen sujetos a la salvaguarda del
+  dispositivo MIUI: nunca ejecutarlos contra las preguntas reales del telefono
+  primario; usar base aislada en emulador/dispositivo separado.

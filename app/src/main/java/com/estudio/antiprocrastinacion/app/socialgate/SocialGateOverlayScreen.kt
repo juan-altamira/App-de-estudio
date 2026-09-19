@@ -45,7 +45,7 @@ import com.estudio.antiprocrastinacion.app.ui.common.StudySurfaceCard
 import com.estudio.antiprocrastinacion.app.ui.common.isTrueFalseMatch
 
 /**
- * Full-screen gate content rendered inside the accessibility overlay. It mirrors the
+ * Full-screen gate content rendered inside the app's single Activity. It mirrors the
  * Tarjetas pendientes screen (QuickStudyScreen) structure and components on purpose;
  * the only intentional differences are the gate context badge and the absence of any
  * exit/retry affordance, because the gate cannot be dismissed without solving it.
@@ -144,9 +144,8 @@ fun SocialGateOverlayScreen(
             }
         }
 
-        // Confirmación del escape: inline (NO AlertDialog). Un Compose Dialog abre una ventana
-        // hija que necesita token de Activity y crashea dentro del overlay del servicio
-        // (BadTokenException). Se dibuja como scrim + card EN EL MISMO overlay.
+        // Confirmación inline para mantener el gate en una sola superficie, sin una ventana
+        // secundaria que pueda quedar separada del estado de bloqueo.
         if (showEscapeDialog && state.escape.canUse) {
             GateEscapeConfirm(
                 escape = state.escape,

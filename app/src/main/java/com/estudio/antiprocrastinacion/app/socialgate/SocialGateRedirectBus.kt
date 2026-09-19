@@ -9,9 +9,8 @@ import kotlinx.coroutines.flow.asStateFlow
  * Singleton event bus that signals the Compose UI to navigate directly
  * to a study session after a social gate is completed.
  *
- * This avoids relying on Intent extras and lifecycle observers,
- * which are unreliable when the app is brought to the foreground
- * from an AccessibilityService overlay.
+ * This avoids relying on Intent extras and lifecycle observers when the
+ * foreground monitor reorders the existing Activity task.
  */
 object SocialGateRedirectBus {
     private const val TAG = "SocialGate"

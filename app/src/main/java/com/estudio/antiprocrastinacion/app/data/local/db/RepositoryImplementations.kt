@@ -50,6 +50,8 @@ import com.estudio.antiprocrastinacion.app.model.state.StudySession
 import com.estudio.antiprocrastinacion.app.data.local.store.AppSettingsStore
 import com.estudio.antiprocrastinacion.app.data.local.store.SocialGateStore
 import com.estudio.antiprocrastinacion.app.data.importing.ContentImportRules
+import com.estudio.antiprocrastinacion.app.socialgate.SocialGateCatalog
+import com.estudio.antiprocrastinacion.app.socialgate.SocialGateSchedule
 import com.estudio.antiprocrastinacion.app.ui.common.AppJson
 import com.estudio.antiprocrastinacion.app.ui.common.IdProvider
 import com.estudio.antiprocrastinacion.app.ui.common.TimeProvider
@@ -570,25 +572,39 @@ class DefaultSettingsRepository @Inject constructor(
 class LocalSocialGateRepository @Inject constructor(
     private val store: SocialGateStore,
 ) : SocialGateRepository {
+    private fun ensureActiveRules(rules: List<SocialGateRule>): List<SocialGateRule> {
+        val byPackage = rules.associateBy { it.packageName }
+        val supported = SocialGateCatalog.supportedApps.map { app ->
+            val existing = byPackage[app.packageName]
+            SocialGateSchedule.normalizeRule(existing ?: SocialGateCatalog.defaultRule(app))
+        }
+        val others = rules.filterNot { rule -> SocialGateCatalog.supportedApps.any { it.packageName == rule.packageName } }
+            .map(SocialGateSchedule::normalizeRule)
+        return (supported + others).sortedBy { it.displayName.lowercase() }
+    }
+
     override fun observeRules(): Flow<List<SocialGateRule>> =
         store.snapshot
-            .map { snapshot -> snapshot.rules.map { it.asDomain() } }
+            .map { snapshot -> ensureActiveRules(snapshot.rules.map { it.asDomain() }) }
             .distinctUntilChanged()
 
     override suspend fun getRules(): List<SocialGateRule> =
-        store.getCurrent().rules.map { it.asDomain() }
+        ensureActiveRules(store.getCurrent().rules.map { it.asDomain() })
 
     override suspend fun getRule(packageName: String): SocialGateRule? =
         getRules().firstOrNull { it.packageName == packageName }
 
     override suspend fun upsertRule(rule: SocialGateRule) {
+        val normalized = SocialGateSchedule.normalizeRule(rule)
         store.update { current ->
             val updatedRules =
-                current.rules
-                    .map { it.asDomain() }
-                    .filterNot { it.packageName == rule.packageName } + rule
+                ensureActiveRules(
+                    current.rules
+                        .map { it.asDomain() }
+                        .filterNot { it.packageName == normalized.packageName } + normalized,
+                )
             current.copy(
-                rules = updatedRules.sortedBy { it.displayName.lowercase() }.map { it.asDto() },
+                rules = updatedRules.map { it.asDto() },
             )
         }
     }
@@ -644,9 +660,10 @@ class LocalSocialGateRepository @Inject constructor(
         dailyStates: List<SocialGateDailyState>,
         runtimeState: SocialGateRuntimeState,
     ) {
+        val activeRules = ensureActiveRules(rules)
         store.update {
             it.copy(
-                rules = rules.map { rule -> rule.asDto() },
+                rules = activeRules.map { rule -> rule.asDto() },
                 dailyStates = dailyStates.map { state -> state.asDto() },
                 runtimeState = runtimeState.asDto(),
             )

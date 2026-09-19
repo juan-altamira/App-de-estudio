@@ -6,7 +6,7 @@
     <!-- Detección de la app en foreground sin accesibilidad (UsageStatsManager). -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
-    <!-- Overlay del gate sobre otras apps. -->
+    <!-- Autoriza traer la Activity del gate al frente desde segundo plano; no se crea un overlay. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Servicio en primer plano persistente que vigila el foreground. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -43,7 +43,9 @@
         <!--
             Vigilante del gate social. Reemplaza al antiguo AccessibilityService (que en
             HyperOS/MIUI quedaba "configurado pero inactivo"). Sondea UsageStatsManager para
-            detectar la app en foreground y dibuja el overlay con SYSTEM_ALERT_WINDOW.
+            detectar la app en foreground y reimpone la única MainActivity mientras el gate siga
+            activo. SYSTEM_ALERT_WINDOW se usa como permiso de background-activity launch; nunca
+            se crea TYPE_APPLICATION_OVERLAY.
             Tipo specialUse: monitoreo de uso para gestión de tiempo en pantalla (sideload).
         -->
         <service

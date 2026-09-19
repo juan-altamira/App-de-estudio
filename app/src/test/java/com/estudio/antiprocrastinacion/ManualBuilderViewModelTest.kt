@@ -11,6 +11,7 @@ import com.estudio.antiprocrastinacion.app.domain.repository.ImportPreparationRe
 import com.estudio.antiprocrastinacion.app.domain.repository.ImportValidationProfile
 import com.estudio.antiprocrastinacion.app.domain.repository.ValidationReport
 import com.estudio.antiprocrastinacion.app.model.content.ContentTree
+import com.estudio.antiprocrastinacion.app.model.content.ContentOrigin
 import com.estudio.antiprocrastinacion.app.model.content.Course
 import com.estudio.antiprocrastinacion.app.model.content.CourseWithUnits
 import com.estudio.antiprocrastinacion.app.model.content.FacetType
@@ -21,6 +22,9 @@ import com.estudio.antiprocrastinacion.app.model.content.ItemRole
 import com.estudio.antiprocrastinacion.app.model.content.ManualItemEdit
 import com.estudio.antiprocrastinacion.app.model.content.Node
 import com.estudio.antiprocrastinacion.app.model.content.NodeDetail
+import com.estudio.antiprocrastinacion.app.model.content.NodeType
+import com.estudio.antiprocrastinacion.app.model.content.Outcome
+import com.estudio.antiprocrastinacion.app.model.content.OutcomeWithNodes
 import com.estudio.antiprocrastinacion.app.model.content.Surface
 import com.estudio.antiprocrastinacion.app.model.content.UnitModel
 import com.estudio.antiprocrastinacion.app.model.content.UnitWithOutcomes
@@ -140,7 +144,7 @@ class ManualBuilderViewModelTest {
         }
 
     @Test
-    fun `unit with fewer than four quick questions cannot be saved and guidance appears`() =
+    fun `one complete quick question can be saved without a minimum`() =
         runTest(dispatcher) {
             val repository = CapturingContentRepository()
             val viewModel = newViewModel(repository)
@@ -148,19 +152,21 @@ class ManualBuilderViewModelTest {
 
             viewModel.createNewCourse("Física")
             viewModel.createUnit("Cinemática")
-            viewModel.buildQuickQuestions(ReviewedQuestionFormat.MULTIPLE_CHOICE, count = 3)
+            viewModel.buildQuickQuestions(ReviewedQuestionFormat.MULTIPLE_CHOICE, count = 1)
 
             viewModel.requestSave()
             advanceUntilIdle()
 
-            assertThat(viewModel.uiState.value.saved).isFalse()
-            assertThat(viewModel.uiState.value.showAlmostReady).isTrue()
-            assertThat(repository.imported).isFalse()
-            assertThat(viewModel.uiState.value.currentReadiness?.needQuick).isEqualTo(1)
+            assertThat(viewModel.uiState.value.saved).isTrue()
+            assertThat(viewModel.uiState.value.showAlmostReady).isFalse()
+            assertThat(repository.imported).isTrue()
+            assertThat(viewModel.uiState.value.currentReadiness?.completeCount).isEqualTo(1)
+            assertThat(repository.lastPackage().nodes.single().surfaceEasyReady).isFalse()
+            assertThat(repository.lastPackage().nodes.single().surfaceEasyItemCount).isEqualTo(1)
         }
 
     @Test
-    fun `reveal-answer questions are deep only and do not count toward the quick minimum`() =
+    fun `one reveal-answer question saves into pending cards without external surfaces`() =
         runTest(dispatcher) {
             val repository = CapturingContentRepository()
             val viewModel = newViewModel(repository)
@@ -168,21 +174,63 @@ class ManualBuilderViewModelTest {
 
             viewModel.createNewCourse("Filosofía")
             viewModel.createUnit("Conceptos")
-            // Four reveal-answer questions: complete, but none is "quick".
-            ensureQuestionCount(viewModel, 4)
-            for (i in 0..3) {
-                viewModel.setQuestionFormat(i, ReviewedQuestionFormat.REVEAL_ANSWER)
-                viewModel.setQuestionStem(i, "Explicá el concepto $i")
-                viewModel.setRevealAnswer(i, "Una explicación $i")
-            }
+            viewModel.setQuestionFormat(0, ReviewedQuestionFormat.REVEAL_ANSWER)
+            viewModel.setQuestionStem(0, "Explicá el concepto")
+            viewModel.setRevealAnswer(0, "Una explicación")
 
-            assertThat(viewModel.uiState.value.currentReadiness?.needQuick).isEqualTo(4)
+            assertThat(viewModel.uiState.value.currentReadiness?.completeCount).isEqualTo(1)
             assertThat(viewModel.uiState.value.currentReadiness?.incompleteCount).isEqualTo(0)
 
             viewModel.requestSave()
             advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.saved).isTrue()
+            val pkg = repository.lastPackage()
+            val reveal = pkg.items.single()
+            assertThat(reveal.format).isEqualTo(ItemFormat.ONE_SENTENCE_EXPLANATION)
+            assertThat(reveal.allowedSurfaces).containsExactly(Surface.IN_APP_QUICK, Surface.IN_APP_DEEP)
+            assertThat(reveal.allowedSurfaces).containsNoneOf(Surface.SOCIAL_GATE, Surface.NOTIFICATION, Surface.BACK_MICRO)
+            assertThat(pkg.nodes.single().surfaceEasyReady).isFalse()
+            assertThat(pkg.nodes.single().surfaceEasyItemCount).isEqualTo(0)
+        }
+
+    @Test
+    fun `an incomplete question still blocks saving`() =
+        runTest(dispatcher) {
+            val repository = CapturingContentRepository()
+            val viewModel = newViewModel(repository)
+            advanceUntilIdle()
+
+            viewModel.createNewCourse("Filosofía")
+            viewModel.createUnit("Incompleta")
+            viewModel.requestSave()
+            advanceUntilIdle()
+
             assertThat(viewModel.uiState.value.saved).isFalse()
             assertThat(viewModel.uiState.value.showAlmostReady).isTrue()
+            assertThat(repository.imported).isFalse()
+            assertThat(viewModel.uiState.value.currentReadiness?.completeCount).isEqualTo(0)
+            assertThat(viewModel.uiState.value.currentReadiness?.incompleteCount).isEqualTo(1)
+        }
+
+    @Test
+    fun `an empty unit still blocks saving`() =
+        runTest(dispatcher) {
+            val repository = CapturingContentRepository()
+            val viewModel = newViewModel(repository)
+            advanceUntilIdle()
+
+            viewModel.createNewCourse("Filosofía")
+            viewModel.createUnit("Vacía")
+            viewModel.removeQuestion(0)
+            viewModel.requestSave()
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.saved).isFalse()
+            assertThat(viewModel.uiState.value.showAlmostReady).isTrue()
+            assertThat(repository.imported).isFalse()
+            assertThat(viewModel.uiState.value.currentReadiness?.completeCount).isEqualTo(0)
+            assertThat(viewModel.uiState.value.currentReadiness?.incompleteCount).isEqualTo(0)
         }
 
     @Test
@@ -259,6 +307,46 @@ class ManualBuilderViewModelTest {
             assertThat(pkg.courses.single().courseId).isEqualTo("bio")
             // New unit id is namespaced under the existing course and does not collide.
             assertThat(pkg.units.single().unitId).isEqualTo("bio__tema_nuevo")
+            assertThat(pkg.units.single().orderIndex).isEqualTo(1)
+        }
+
+    @Test
+    fun `adding questions to an existing unit uses new identities and preserves its metadata`() =
+        runTest(dispatcher) {
+            val repository = CapturingContentRepository(tree = courseTreeWithExistingQuestionBank())
+            val viewModel = newViewModel(repository)
+            advanceUntilIdle()
+
+            viewModel.chooseExistingCourse(viewModel.uiState.value.existingCourses.single())
+            advanceUntilIdle()
+            assertThat(viewModel.uiState.value.existingUnits.map { it.title }).containsExactly("Base")
+
+            viewModel.chooseExistingUnit(viewModel.uiState.value.existingUnits.single())
+            viewModel.buildQuickQuestions(ReviewedQuestionFormat.MULTIPLE_CHOICE, count = 1)
+            viewModel.requestSave()
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value.saved).isTrue()
+            assertThat(repository.lastProfile).isEqualTo(ImportValidationProfile.REVIEWED_QUESTION_BANK)
+            val pkg = repository.lastPackage()
+            val course = pkg.courses.single()
+            assertThat(course.courseId).isEqualTo("bio")
+            assertThat(course.description).isEqualTo("Curso existente")
+            assertThat(course.version).isEqualTo(7)
+            assertThat(course.updatedAt).isEqualTo(77L)
+
+            val unit = pkg.units.single()
+            assertThat(unit.unitId).isEqualTo("bio__base")
+            assertThat(unit.description).isEqualTo("Unidad existente")
+            assertThat(unit.orderIndex).isEqualTo(4)
+            assertThat(unit.version).isEqualTo(5)
+            assertThat(unit.updatedAt).isEqualTo(55L)
+
+            val newNode = pkg.nodes.single()
+            assertThat(newNode.nodeId).isEqualTo("bio__base__contenido_manual_2")
+            assertThat(pkg.outcomes.single().outcomeId).isEqualTo("bio__base__resolver_preguntas_manual_2")
+            assertThat(pkg.items.single().itemId).isEqualTo("bio__base__contenido_manual_2__pregunta_1")
+            assertThat(pkg.nodes.map { it.nodeId }).doesNotContain("bio__base__contenido_manual")
         }
 
     @Test
@@ -349,6 +437,77 @@ private fun singleCourseTree(): ContentTree =
                                         updatedAt = 0L,
                                     ),
                                 outcomes = emptyList(),
+                            ),
+                        ),
+                ),
+            ),
+    )
+
+private fun courseTreeWithExistingQuestionBank(): ContentTree =
+    ContentTree(
+        courses =
+            listOf(
+                CourseWithUnits(
+                    course =
+                        Course(
+                            courseId = "bio",
+                            title = "Biología",
+                            description = "Curso existente",
+                            version = 7,
+                            updatedAt = 77L,
+                        ),
+                    units =
+                        listOf(
+                            UnitWithOutcomes(
+                                unit =
+                                    UnitModel(
+                                        unitId = "bio__base",
+                                        courseId = "bio",
+                                        title = "Base",
+                                        description = "Unidad existente",
+                                        orderIndex = 4,
+                                        version = 5,
+                                        updatedAt = 55L,
+                                    ),
+                                outcomes =
+                                    listOf(
+                                        OutcomeWithNodes(
+                                            outcome =
+                                                Outcome(
+                                                    outcomeId = "bio__base__resolver_preguntas_manual",
+                                                    unitId = "bio__base",
+                                                    title = "Banco existente",
+                                                    description = null,
+                                                    version = 1,
+                                                    updatedAt = 10L,
+                                                ),
+                                            nodes =
+                                                listOf(
+                                                    Node(
+                                                        nodeId = "bio__base__contenido_manual",
+                                                        courseId = "bio",
+                                                        unitId = "bio__base",
+                                                        outcomeIds = listOf("bio__base__resolver_preguntas_manual"),
+                                                        title = "Banco existente",
+                                                        coreClaim = "Contenido previo",
+                                                        type = NodeType.CONCEPT,
+                                                        weightExam = 0.7,
+                                                        prerequisites = emptyList(),
+                                                        facets = listOf(FacetType.DEFINICION_FUNCIONAL),
+                                                        mustKnow = listOf("Pregunta existente"),
+                                                        commonErrors = emptyList(),
+                                                        minimumMasteryDefinition = "Responder el banco existente.",
+                                                        surfaceEasyReady = false,
+                                                        surfaceEasyItemCount = 1,
+                                                        sourceRefs = emptyList(),
+                                                        version = 1,
+                                                        updatedAt = 10L,
+                                                        archivedCandidate = false,
+                                                        contentOrigin = ContentOrigin.IMPORTED,
+                                                    ),
+                                                ),
+                                        ),
+                                    ),
                             ),
                         ),
                 ),

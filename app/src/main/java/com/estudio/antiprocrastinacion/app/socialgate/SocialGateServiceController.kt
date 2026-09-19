@@ -10,8 +10,9 @@ import android.util.Log
  * (se detiene solo si no hay reglas activas o faltan permisos), así que estos helpers solo
  * "lo despiertan": en el arranque de la app, al reiniciar el teléfono, o al habilitar una regla.
  *
- * Arrancar un FGS desde segundo plano (boot) está permitido porque la app tiene
- * SYSTEM_ALERT_WINDOW, que exime de las restricciones de inicio en background.
+ * Tras boot/package-replaced se usa la excepción explícita de Android para receivers de sistema.
+ * `SYSTEM_ALERT_WINDOW` se conserva para poder traer la Activity del gate al frente cuando el
+ * vigilante ya está activo; no se crea una ventana overlay.
  */
 object SocialGateServiceController {
     private const val TAG = "SocialGate"

@@ -49,13 +49,6 @@ class SocialGateSettingsViewModel(
         }
     }
 
-    fun updateRuleEnabled(
-        packageName: String,
-        enabled: Boolean,
-    ) {
-        updateRule(packageName) { it.copy(enabled = enabled) }
-    }
-
     fun updateMaxTriggersPerDay(
         packageName: String,
         count: Int,
@@ -103,13 +96,14 @@ class SocialGateSettingsViewModel(
                     ?: SocialGateRule(
                         packageName = packageName,
                         displayName = app.displayName,
-                        enabled = app.enabled,
+                        enabled = true,
                         maxTriggersPerDay = app.maxTriggersPerDay,
                         requiredCorrectAnswers = app.requiredCorrectAnswers,
                         windowStartMinutes = app.windowStartMinutes,
                         windowEndMinutes = app.windowEndMinutes,
                     )
-            socialGateRepository.upsertRule(SocialGateSchedule.normalizeRule(transform(current)))
+            val updated = transform(current).copy(enabled = true)
+            socialGateRepository.upsertRule(SocialGateSchedule.normalizeRule(updated))
         }
     }
 

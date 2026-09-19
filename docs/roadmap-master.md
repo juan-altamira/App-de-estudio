@@ -522,11 +522,13 @@ No hay preview ni home intermedio después del handoff.
 - `[x]` `IN_APP_QUICK`, `IN_APP_DEEP` y `BACK_MICRO` implementadas
 - `[-]` Hooks externos parcialmente implementados: notificación y gate social ya existen; widget y alarma siguen pendientes
 
-## 9. Banco simple obligatorio y pools de selección
+## 9. Banco simple para superficies externas y pools de selección
 
 ### 9.1 Requisito por nodo
 
-Todo nodo debe tener al menos 4 ítems aptos para superficies externas.
+Como objetivo de authoring centrado en nodos, todo nodo destinado a superficies externas debe tener al menos 4 ítems aptos para esas superficies.
+
+Esto no es un bloqueo estructural para el banco revisado ni para el alta manual desde la UI. El constructor manual permite guardar una unidad con al menos una pregunta completa, aunque tenga cero ítems estrictos de fricción 1. En ese caso `surface_easy_ready=false`, las superficies externas omiten la unidad y las preguntas normales `Con tus palabras` siguen entrando como deuda real de `Tarjetas pendientes` dentro de la app.
 
 Distribución mínima sugerida:
 - 2 MCQ simples
@@ -536,6 +538,12 @@ Distribución mínima sugerida:
 Campos asociados:
 - `surface_easy_ready`
 - `surface_easy_item_count`
+
+### Estado actual del repo
+
+- `[x]` El alta manual no exige un mínimo de cuatro preguntas rápidas; solo exige al menos una pregunta completa por unidad y ninguna incompleta.
+- `[x]` Las preguntas manuales normales `Con tus palabras` participan en `IN_APP_QUICK` sin habilitar superficies externas no autocorregibles.
+- `[x]` El constructor manual permite elegir una unidad existente y agrega las preguntas en un lote aditivo con identidades nuevas, sin tocar preguntas ni progreso previos.
 
 ### 9.2 Pools
 
@@ -941,6 +949,7 @@ No guardar progreso ni eventos en DataStore.
 - `[x]` Preflight de import reconoce aliases de schema seguros para `AuthoringDraftPackage`/`ContentPackageDto`, rechaza paquetes planos de preguntas y muestra diagnósticos estructurados expandibles
 - `[x]` Import por archivo de `content_package` soporta `importMode: "additive"` para agregar unidades/preguntas sin archivar nodos hermanos ausentes
 - `[x]` Importación por texto editable revisado: único input inicial de texto fuente, extractor local conservador, draft editable por campo visible con alta/baja de preguntas, compilador determinístico multiunidad a `ContentPackageDto` y validación con perfil `REVIEWED_QUESTION_BANK`
+- `[x]` Alta manual de preguntas sobre unidades existentes mediante un lote aditivo aislado que conserva metadatos e identidades previas
 - `[-]` Revisión de paquetes grandes y diffs de import todavía necesita más robustez visible
 
 ## 19. Repositorios e interfaces estables
@@ -1377,6 +1386,7 @@ Esta sección existe para poder consultar rápido el estado real sin releer todo
 - `[x]` preflight de import ahora acepta aliases seguros (`authoring_draft`, `QuestionDraftPackage`, `content_package`) solo con forma contractual correcta, normaliza enums mecánicamente y despliega errores con path/esperado/recibido/hint
 - `[x]` import por archivo de paquetes finales puede ser aditivo explícito, preservando hermanos existentes del curso sin marcarlos `archived_candidate`
 - `[x]` importador de texto editable revisado compila un único texto fuente y un draft revisable/editable por campo visible con alta/baja de preguntas a banco de preguntas multiunidad sin generar `RESCUE` ni meter perfil dentro de `ContentPackageDto`
+- `[x]` constructor manual agrega preguntas a unidades existentes sin sobrescribir ni archivar las preguntas que ya estaban
 - `[x]` revisión operativa de `archived_candidate` con selección y restauración masiva de archivados visibles
 - `[x]` export/import local de `sync_snapshot` preservando contenido, progreso, `formatStats`, archivados candidatos, settings y sesión activa
 
@@ -1385,6 +1395,10 @@ Esta sección existe para poder consultar rápido el estado real sin releer todo
 - `[-]` `user_state_package` standalone todavía no expuesto como flujo separado
 - `[-]` notificación cognitiva
 - `[x]` gate social respaldado por `Tarjetas pendientes` sin fillers gate-only
+- `[x]` gate social endurecido para HyperOS con monitor `UsageStats`, FGS rearmado en boot y
+  reimposición de la Activity única sin `AccessibilityService` ni ventana
+  `TYPE_APPLICATION_OVERLAY`
+- `[x]` gate social permanentemente activo sin switch de apagado en UI ni repositorio, garantizando reglas activas ineludibles para todas las redes soportadas (Instagram, TikTok, X) con horarios y frecuencias configurables
 - `[ ]` widget
 - `[ ]` alarma
 - `[ ]` web sobria (cuando se llegue a esta parte hay que discutir bien el stack)

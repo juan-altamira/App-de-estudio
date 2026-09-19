@@ -5,6 +5,8 @@
 - import logic
 - explicit additive `content_package` file imports do not archive sibling nodes
 - reviewed editable import extraction, validation, compilation and validation-profile behavior
+- manual builder readiness without a four-question minimum, including reveal-only units in `Tarjetas pendientes` and rejection of empty or incomplete units
+- manual builder additions to existing units use fresh outcome/node/item identities, preserve course/unit metadata, and keep the import additive so prior questions and progress remain untouched
 - upsert by ID
 - progress preservation on wording changes
 - scheduler scoring
@@ -27,6 +29,10 @@
 - social gate does not block when `Tarjetas pendientes` has no real pending debt
 - social gate never creates gate-only filler questions, uses future/not-due cards, or turns `RESCUE` into gate debt
 - social gate escape unlocks only the current foreground opportunity and exposes the exact remaining-use count
+- social gate reimposes the single study Activity when an unresolved gate loses focus, including
+  while `UsageStats` briefly reports a stale own-package value
+- social gate relaunch throttling prevents a `startActivity` storm and always yields to calls,
+  screen-off and lock-screen states
 - `Tarjetas pendientes` light-entry rules
 - back_exit timing
 - archived_candidate exclusion
@@ -51,6 +57,8 @@
 - second notification reflects real progress made after the first one
 - gate social continuity has no intermediate screen
 - gate social keeps course/unit/unlock progress visible
+- gate social is hosted inside the existing Activity, consumes Back while active, and exposes no
+  granted-state shortcut back to the special-access revocation screen
 - Activity recreation and exact restoration, including local pending phase and auxiliary veto when applicable
 - `Contenido` shows only one hierarchy layer at a time with breadcrumb-style context
 - reset node progress confirmation
@@ -65,10 +73,11 @@
 - exported Room schema tracked from first version
 
 ## Device-specific safeguard
-- On the Xiaomi Redmi Note 13 Pro 5G used for local validation, do not reinstall the app or run instrumented tests while the social gate AccessibilityService is enabled.
-- If the process is killed during install or instrumentation with the service active, Android can mark the service as crashed and MIUI may keep showing "this service is not working correctly" until the phone is rebooted and the service is enabled again manually.
+- The Xiaomi Redmi Note 13 Pro 5G gate no longer uses AccessibilityService or an alert-window overlay.
+- Do not execute gate instrumented tests against the primary phone: they can surface and consume real unseen pending questions. Use the isolated instrumentation database on an emulator or separate device.
 - On the primary validation phone for this local-only MVP, do not run `connectedDebugAndroidTest`, reinstall the app, or otherwise replace the installed package unless the user explicitly approves it for that run or a fresh snapshot/user-state export already exists outside the app.
-- Reason: reinstalling a local-only build can wipe app data, and Android backup/restore is not guaranteed to recover it on adb-driven test flows.
+- Before any approved package replacement, also preserve a raw private-data archive including the Room DB/WAL/SHM and verify content counts and ID digests before/after `adb install -r`. Never uninstall or clear package data as part of validation.
+- Reason: uninstalling or reinstalling incorrectly can wipe local-only data, and Android backup/restore is not guaranteed to recover it on adb-driven test flows.
 
 ## Task completeness rule
 

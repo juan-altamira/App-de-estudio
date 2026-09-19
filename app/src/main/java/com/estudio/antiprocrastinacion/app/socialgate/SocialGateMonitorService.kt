@@ -1,6 +1,6 @@
 package com.estudio.antiprocrastinacion.app.socialgate
 
-import android.app.ActivityOptions
+import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,8 +9,9 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
+import android.os.SystemClock
 import android.util.Log
-import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.estudio.antiprocrastinacion.MainActivity
@@ -36,41 +37,36 @@ import kotlinx.coroutines.withContext
  *
  * Reemplaza a `SocialGateAccessibilityService`. Corre como Foreground Service `specialUse`,
  * sondea `UsageStatsManager` para saber qué app está en foreground y, cuando aparece una app
- * social bloqueada, alimenta al `SocialGateCoordinator` (la lógica del gate no cambia) y dibuja
- * el overlay con `TYPE_APPLICATION_OVERLAY`.
+ * social bloqueada, alimenta al `SocialGateCoordinator` (la lógica del gate no cambia) y trae al
+ * frente la única `MainActivity`, que renderiza el gate en su propio contenido.
  *
  * Por qué es más estable que la accesibilidad en HyperOS/MIUI: los permisos (Acceso de uso y
  * Mostrar sobre otras apps) NO se auto-revocan; solo el proceso puede morir, y vuelve solo por
- * START_STICKY + arranque en boot + arranque al abrir la app.
+ * START_STICKY + arranque en boot + arranque al abrir la app. No se crea ninguna ventana
+ * `TYPE_APPLICATION_OVERLAY`, por lo que Android no publica el aviso de superposición revocable.
  */
 class SocialGateMonitorService : Service() {
     private val exceptionHandler =
         CoroutineExceptionHandler { _, throwable ->
             Log.e(TAG, "Excepción no capturada en el monitor", throwable)
-            hideOverlayIfCreated()
+            hideGatePresentation()
         }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + exceptionHandler)
 
     private val coordinator by lazy { (applicationContext as StudyApplication).container.socialGateCoordinator }
     private val socialGateRepository by lazy { (applicationContext as StudyApplication).container.socialGateRepository }
     private val foregroundReader by lazy { UsageStatsForegroundReader(applicationContext) }
+    private val keyguardManager by lazy { getSystemService(KeyguardManager::class.java) }
+    private val powerManager by lazy { getSystemService(PowerManager::class.java) }
     private val timeProvider: TimeProvider = DefaultTimeProvider()
-
-    private val overlayHostHolder = lazy {
-        SocialGateOverlayHost(
-            context = this,
-            windowManager = getSystemService(WindowManager::class.java),
-        )
-    }
-    private val overlayHost: SocialGateOverlayHost
-        get() = overlayHostHolder.value
+    private val activityLaunchThrottle = GateActivityLaunchThrottle(ACTIVITY_RELAUNCH_MIN_INTERVAL_MS)
+    private val foregroundProcessingTracker = ForegroundProcessingTracker()
 
     @Volatile
     private var enabledRulesByPackage: Map<String, SocialGateRule> = emptyMap()
     private var pollJob: Job? = null
     private var rulesJob: Job? = null
     private var lastForegroundPackage: String? = null
-    private var lastProcessedPackage: String? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -79,14 +75,17 @@ class SocialGateMonitorService : Service() {
         isRunning = true
         startAsForeground()
         observeRules()
-        startPolling()
         log("monitor service created")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // Idempotente: si el sistema relanza el servicio (START_STICKY) ya estamos en foreground.
         startAsForeground()
-        if (pollJob?.isActive != true) startPolling()
+        if (rulesJob?.isActive != true) {
+            observeRules()
+        } else if (enabledRulesByPackage.isNotEmpty() && pollJob?.isActive != true) {
+            startPolling()
+        }
         return START_STICKY
     }
 
@@ -94,7 +93,7 @@ class SocialGateMonitorService : Service() {
         isRunning = false
         pollJob?.cancel()
         rulesJob?.cancel()
-        hideOverlayIfCreated()
+        hideGatePresentation()
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -105,10 +104,16 @@ class SocialGateMonitorService : Service() {
             serviceScope.launch {
                 socialGateRepository.observeRules().collectLatest { rules ->
                     enabledRulesByPackage = rules.filter { it.enabled }.associateBy { it.packageName }
+                    foregroundProcessingTracker.onRulesChanged(enabledRulesByPackage.isNotEmpty())
                     // Sin reglas activas no tiene sentido seguir vigilando: liberamos recursos.
                     if (enabledRulesByPackage.isEmpty()) {
                         log("no hay reglas activas → stopSelf")
                         stopSelf()
+                    } else if (pollJob?.isActive != true) {
+                        // No sondeamos antes de tener la primera foto de reglas. En un reinicio de
+                        // proceso, procesar antes la app social como "no objetivo" puede impedir
+                        // restaurar el gate mientras ese mismo paquete siga en foreground.
+                        startPolling()
                     }
                 }
             }
@@ -136,8 +141,16 @@ class SocialGateMonitorService : Service() {
             foregroundReader.resolveForegroundPackage(now, previous)
         }
         lastForegroundPackage = foreground
-        if (foreground == lastProcessedPackage) return
-        lastProcessedPackage = foreground
+
+        // Se evalúa en CADA pulso, incluso si UsageStats todavía repite el mismo paquete. Al salir
+        // por Home/Recientes, HyperOS puede seguir reportando la propia app unos milisegundos;
+        // la pérdida real de foco de MainActivity permite reimponerla igualmente.
+        coordinator.activeGatePrompt()?.let { activeGate ->
+            presentGate(activeGate)
+            ensureGateActivityVisible(activeGate, foreground)
+        }
+
+        if (!foregroundProcessingTracker.shouldProcess(foreground)) return
         processStableForeground(foreground)
     }
 
@@ -148,14 +161,24 @@ class SocialGateMonitorService : Service() {
             return
         }
 
-        // App no-objetivo (la propia, launcher, dialer, cualquiera). Actualizamos el estado del
+        val activeGate = coordinator.activeGatePrompt()
+        if (
+            activeGate != null &&
+            (packageName == this.packageName || packageName in InescapableGateDecision.ALWAYS_ALLOWED_PACKAGES)
+        ) {
+            // La Activity propia es donde se responde. Una llamada conserva el estado detrás, pero
+            // no se disputa el primer plano hasta que termina.
+            presentGate(activeGate)
+            ensureGateActivityVisible(activeGate, packageName)
+            return
+        }
+
+        // App no-objetivo (launcher, SystemUI, cualquier otra). Actualizamos el estado del
         // coordinador igual (mantiene lastForeground, expira tokens, etc.).
         val result = coordinator.onNonTargetForegroundStable(packageName)
 
-        // Gate inescapable: si hay un gate disparado sin resolver, lo mantenemos ENCIMA de esta
-        // app (no se puede esquivar yendo a Home u otra app) hasta que se estudia o se usa el
-        // escape. Cede solo ante la propia app de estudio y ante teléfono/llamadas.
-        val activeGate = coordinator.activeGatePrompt()
+        // Gate inescapable: si hay un gate disparado sin resolver, volvemos a traer la Activity
+        // sobre cualquier otra app hasta que se estudia o se usa el escape.
         val keepGate =
             InescapableGateDecision.shouldKeepGateOver(
                 foregroundPackage = packageName,
@@ -169,36 +192,74 @@ class SocialGateMonitorService : Service() {
         }
     }
 
-    private suspend fun applyResult(result: SocialGateCoordinatorResult) {
+    private suspend fun applyResult(
+        result: SocialGateCoordinatorResult,
+        returnToPreviousApp: Boolean = false,
+    ) {
         when (result) {
             SocialGateCoordinatorResult.Allowed,
             SocialGateCoordinatorResult.HideOverlay,
-            -> hideOverlayIfCreated()
+            -> {
+                hideGatePresentation()
+                if (returnToPreviousApp) {
+                    SocialGateActivityHost.requestReturnToPreviousApp()
+                }
+            }
 
-            is SocialGateCoordinatorResult.ShowPrompt ->
-                overlayHost.showPrompt(
-                    state = result.state,
-                    onSubmitAnswer = { responseText, isCorrect, latencyMs ->
-                        serviceScope.launch {
-                            applyResult(coordinator.submitAnswer(responseText, isCorrect, latencyMs))
-                        }
-                    },
-                    onRevealAnswer = {
-                        serviceScope.launch { applyResult(coordinator.revealAnswer()) }
-                    },
-                    onContinueAfterFeedback = {
-                        serviceScope.launch { applyResult(coordinator.continueAfterFeedback()) }
-                    },
-                    onUseEscape = {
-                        serviceScope.launch { applyResult(coordinator.useEscape()) }
-                    },
-                )
+            is SocialGateCoordinatorResult.ShowPrompt -> {
+                presentGate(result.state)
+                ensureGateActivityVisible(result.state, lastForegroundPackage)
+            }
 
             is SocialGateCoordinatorResult.OpenStudyAppAndHideOverlay -> {
                 openStudyApp(result.sessionId)
-                hideOverlayIfCreated()
+                hideGatePresentation()
             }
         }
+    }
+
+    private fun presentGate(state: SocialGatePromptState) {
+        SocialGateActivityHost.showPrompt(
+            state = state,
+            onSubmitAnswer = { responseText, isCorrect, latencyMs ->
+                serviceScope.launch {
+                    applyResult(coordinator.submitAnswer(responseText, isCorrect, latencyMs))
+                }
+            },
+            onRevealAnswer = {
+                serviceScope.launch { applyResult(coordinator.revealAnswer()) }
+            },
+            onContinueAfterFeedback = {
+                serviceScope.launch { applyResult(coordinator.continueAfterFeedback()) }
+            },
+            onUseEscape = {
+                serviceScope.launch {
+                    val result = coordinator.useEscape()
+                    applyResult(
+                        result = result,
+                        returnToPreviousApp = result == SocialGateCoordinatorResult.HideOverlay,
+                    )
+                }
+            },
+        )
+    }
+
+    private fun ensureGateActivityVisible(
+        state: SocialGatePromptState,
+        foregroundPackage: String?,
+    ) {
+        val shouldBringToFront =
+            InescapableGateDecision.shouldBringStudyActivityToFront(
+                hasActiveGate = true,
+                isStudyActivityInteractive = SocialGateActivityHost.isActivityInteractive,
+                isScreenInteractive = powerManager?.isInteractive == true,
+                isKeyguardLocked = keyguardManager?.isKeyguardLocked == true,
+                foregroundPackage = foregroundPackage,
+            )
+        if (!shouldBringToFront) return
+        if (!activityLaunchThrottle.tryAcquire(SystemClock.elapsedRealtime())) return
+        log("reimposing gate activity target=${state.targetPackageName} foreground=$foregroundPackage")
+        openStudyApp(sessionId = null)
     }
 
     private fun openStudyApp(sessionId: String?) {
@@ -207,24 +268,21 @@ class SocialGateMonitorService : Service() {
         }
         val intent =
             Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                flags =
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
-        val options = ActivityOptions.makeBasic()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            options.pendingIntentBackgroundActivityStartMode = ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-        }
         try {
-            startActivity(intent, options.toBundle())
+            startActivity(intent)
         } catch (error: Exception) {
-            Log.e(TAG, "No se pudo abrir la app de estudio, reintentando sin opciones", error)
-            runCatching { startActivity(intent) }
+            Log.e(TAG, "No se pudo abrir la app de estudio desde segundo plano", error)
         }
     }
 
-    private fun hideOverlayIfCreated() {
-        if (overlayHostHolder.isInitialized()) {
-            overlayHostHolder.value.hide()
-        }
+    private fun hideGatePresentation() {
+        SocialGateActivityHost.hide()
+        activityLaunchThrottle.reset()
     }
 
     private fun startAsForeground() {
@@ -276,11 +334,37 @@ class SocialGateMonitorService : Service() {
         private const val TAG = "SocialGate"
         private const val CHANNEL_ID = "social_gate_monitor"
         private const val NOTIFICATION_ID = 4711
-        private const val POLL_INTERVAL_MS = 700L
+        private const val POLL_INTERVAL_MS = 500L
+        private const val ACTIVITY_RELAUNCH_MIN_INTERVAL_MS = 750L
 
         /** Lo lee [getSocialGateGuardStatus] para mostrar si el vigilante está corriendo. */
         @Volatile
         var isRunning: Boolean = false
             private set
+    }
+}
+
+/**
+ * Evita procesar el foreground antes de cargar reglas y fuerza una reevaluación cuando cambian.
+ * Es especialmente importante tras `START_STICKY`: la app objetivo puede seguir abierta mientras
+ * DataStore entrega su primera emisión.
+ */
+internal class ForegroundProcessingTracker {
+    private var rulesReady = false
+    private var hasProcessedForeground = false
+    private var lastProcessedPackage: String? = null
+
+    fun onRulesChanged(hasEnabledRules: Boolean) {
+        rulesReady = hasEnabledRules
+        hasProcessedForeground = false
+        lastProcessedPackage = null
+    }
+
+    fun shouldProcess(packageName: String?): Boolean {
+        if (!rulesReady) return false
+        if (hasProcessedForeground && packageName == lastProcessedPackage) return false
+        hasProcessedForeground = true
+        lastProcessedPackage = packageName
+        return true
     }
 }

@@ -23,15 +23,55 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.serialization.encodeToString
 
+data class ReviewedQuestionBankCompilationContext(
+    val existingCourse: ExistingCourseCompilationTarget? = null,
+    val existingUnits: Map<String, ExistingUnitCompilationTarget> = emptyMap(),
+    val nextNewUnitOrderIndex: Int = 0,
+)
+
+data class ExistingCourseCompilationTarget(
+    val courseId: String,
+    val title: String,
+    val description: String?,
+    val version: Int,
+    val updatedAt: Long,
+)
+
+data class ExistingUnitCompilationTarget(
+    val unitId: String,
+    val courseId: String,
+    val title: String,
+    val description: String?,
+    val orderIndex: Int,
+    val version: Int,
+    val updatedAt: Long,
+    val newOutcomeId: String,
+    val newNodeId: String,
+)
+
 @Singleton
 class ReviewedQuestionBankCompiler @Inject constructor() {
     fun compile(
         draft: ReviewedEditableImportDraft,
         now: Long,
+        context: ReviewedQuestionBankCompilationContext = ReviewedQuestionBankCompilationContext(),
     ): ContentPackageDto {
         val courseId = draft.course.key
-        val compiledUnits = draft.units.mapIndexed { index, unit -> unit.compile(courseId, index, now) }
+        var newUnitOffset = 0
+        val compiledUnits =
+            draft.units.map { unit ->
+                val existingTarget = context.existingUnits[unit.key]?.takeIf { it.courseId == courseId }
+                val orderIndex = context.nextNewUnitOrderIndex + newUnitOffset
+                if (existingTarget == null) newUnitOffset += 1
+                unit.compile(
+                    courseId = courseId,
+                    orderIndex = orderIndex,
+                    now = now,
+                    existingTarget = existingTarget,
+                )
+            }
         val items = compiledUnits.flatMap(CompiledReviewedUnit::items)
+        val existingCourse = context.existingCourse?.takeIf { it.courseId == courseId }
         val packageWithoutHash =
             ContentPackageDto(
                 packageId = "editable_$courseId",
@@ -43,10 +83,10 @@ class ReviewedQuestionBankCompiler @Inject constructor() {
                     listOf(
                         CourseDto(
                             courseId = courseId,
-                            title = draft.course.title.trim(),
-                            description = null,
-                            version = 1,
-                            updatedAt = now,
+                            title = existingCourse?.title ?: draft.course.title.trim(),
+                            description = existingCourse?.description,
+                            version = existingCourse?.version ?: 1,
+                            updatedAt = existingCourse?.updatedAt ?: now,
                         ),
                     ),
                 units = compiledUnits.map(CompiledReviewedUnit::unit),
@@ -64,10 +104,11 @@ private fun ReviewedEditableUnitDraft.compile(
     courseId: String,
     orderIndex: Int,
     now: Long,
+    existingTarget: ExistingUnitCompilationTarget?,
 ): CompiledReviewedUnit {
-    val unitId = "${courseId}__${key}"
-    val outcomeId = "${unitId}__resolver_preguntas"
-    val nodeId = "${unitId}__contenido"
+    val unitId = existingTarget?.unitId ?: "${courseId}__${key}"
+    val outcomeId = existingTarget?.newOutcomeId ?: "${unitId}__resolver_preguntas"
+    val nodeId = existingTarget?.newNodeId ?: "${unitId}__contenido"
     val sourceRefs = listOfNotNull(sourceRef.trim().takeIf(String::isNotBlank))
     val mustKnowByQuestion =
         questions.associate { question ->
@@ -137,11 +178,11 @@ private fun ReviewedEditableUnitDraft.compile(
             UnitDto(
                 unitId = unitId,
                 courseId = courseId,
-                title = title.trim(),
-                description = sourceRef.trim().takeIf(String::isNotBlank),
-                orderIndex = orderIndex,
-                version = 1,
-                updatedAt = now,
+                title = existingTarget?.title ?: title.trim(),
+                description = existingTarget?.description ?: sourceRef.trim().takeIf(String::isNotBlank),
+                orderIndex = existingTarget?.orderIndex ?: orderIndex,
+                version = existingTarget?.version ?: 1,
+                updatedAt = existingTarget?.updatedAt ?: now,
             ),
         outcome =
             OutcomeDto(

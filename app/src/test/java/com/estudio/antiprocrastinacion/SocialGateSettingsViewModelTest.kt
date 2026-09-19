@@ -128,7 +128,6 @@ class SocialGateSettingsViewModelTest {
             )
 
         advanceUntilIdle()
-        viewModel.updateRuleEnabled("com.instagram.android", true)
         viewModel.updateMaxTriggersPerDay("com.instagram.android", 99)
         viewModel.updateRequiredCorrectAnswers("com.instagram.android", 0)
         advanceUntilIdle()
@@ -236,6 +235,40 @@ class SocialGateSettingsViewModelTest {
         assertThat(viewModel.uiState.value.solvedTodayByPackage["com.instagram.android"]).isEqualTo(1)
         assertThat(viewModel.uiState.value.runtimePhase).isEqualTo(SocialGateRuntimePhase.UNLOCKED_FOR_CURRENT_FOREGROUND)
         assertThat(viewModel.uiState.value.unlockTokenPackageName).isEqualTo("com.instagram.android")
+    }
+
+    @Test
+    fun `rule updates always force enabled to true`() = runTest(dispatcher) {
+        val repository = FakeSettingsSocialGateRepository()
+        val viewModel =
+            SocialGateSettingsViewModel(
+                appContext = ContextWrapper(null),
+                socialGateRepository = repository,
+                installedAppsResolver = { _, _ ->
+                    listOf(
+                        SocialGateInstalledApp(
+                            packageName = "com.instagram.android",
+                            displayName = "Instagram",
+                            installed = true,
+                            enabled = false,
+                            maxTriggersPerDay = 1,
+                            requiredCorrectAnswers = 3,
+                            windowStartMinutes = 0,
+                            windowEndMinutes = 22 * 60,
+                        ),
+                    )
+                },
+                todayKeyProvider = { "2026-04-14" },
+            )
+
+        advanceUntilIdle()
+        viewModel.updateMaxTriggersPerDay("com.instagram.android", 5)
+        advanceUntilIdle()
+
+        val rule = repository.getRule("com.instagram.android")
+        assertThat(rule).isNotNull()
+        assertThat(rule!!.enabled).isTrue()
+        assertThat(rule.maxTriggersPerDay).isEqualTo(5)
     }
 }
 

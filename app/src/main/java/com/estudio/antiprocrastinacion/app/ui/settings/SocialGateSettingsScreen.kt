@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,7 +47,6 @@ fun SocialGateSettingsScreen(
     onBack: () -> Unit,
     onOpenUsageAccessSettings: () -> Unit,
     onOpenOverlaySettings: () -> Unit,
-    onRuleEnabledChange: (String, Boolean) -> Unit,
     onMaxTriggersPerDayChange: (String, Int) -> Unit,
     onWindowStartMinutesChange: (String, Int) -> Unit,
     onWindowEndMinutesChange: (String, Int) -> Unit,
@@ -117,26 +115,35 @@ fun SocialGateSettingsScreen(
                             tone = if (guardStatus.usageAccessGranted) StudyBadgeTone.Success else StudyBadgeTone.Danger,
                         )
                         StudyStatusBadge(
-                            text = if (guardStatus.overlayGranted) "Sobre otras apps ✓" else "Sobre otras apps pendiente",
-                            tone = if (guardStatus.overlayGranted) StudyBadgeTone.Success else StudyBadgeTone.Danger,
+                            text =
+                                if (guardStatus.backgroundLaunchGranted) {
+                                    "Reapertura en segundo plano ✓"
+                                } else {
+                                    "Reapertura pendiente"
+                                },
+                            tone = if (guardStatus.backgroundLaunchGranted) StudyBadgeTone.Success else StudyBadgeTone.Danger,
                         )
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        StudyPrimaryButton(
-                            text = if (guardStatus.usageAccessGranted) "Acceso de uso (concedido)" else "Conceder acceso de uso",
-                            onClick = onOpenUsageAccessSettings,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        StudyPrimaryButton(
-                            text = if (guardStatus.overlayGranted) "Sobre otras apps (concedido)" else "Permitir sobre otras apps",
-                            onClick = onOpenOverlaySettings,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                        if (!guardStatus.usageAccessGranted) {
+                            StudyPrimaryButton(
+                                text = "Conceder acceso de uso",
+                                onClick = onOpenUsageAccessSettings,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                        if (!guardStatus.backgroundLaunchGranted) {
+                            StudyPrimaryButton(
+                                text = "Permitir reapertura en segundo plano",
+                                onClick = onOpenOverlaySettings,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                     Text(
-                        text = "El gate ya no usa accesibilidad. Necesita estos dos permisos. En Xiaomi/HyperOS, además: " +
-                            "Autostart habilitado, batería en \"Sin restricciones\", y \"Mostrar ventanas emergentes mientras se " +
-                            "ejecuta en segundo plano\" activado.",
+                        text = "El gate no usa accesibilidad ni dibuja una superposición. El segundo permiso solo permite " +
+                            "volver a traer la pantalla del gate cuando intentás salir. En Xiaomi/HyperOS, además: " +
+                            "Autostart habilitado, batería en \"Sin restricciones\" y la app bloqueada en Recientes.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -199,7 +206,6 @@ fun SocialGateSettingsScreen(
                                 expandedPackages + app.packageName
                             }
                     },
-                    onRuleEnabledChange = onRuleEnabledChange,
                     onMaxTriggersPerDayChange = onMaxTriggersPerDayChange,
                     onWindowStartRequest = {
                         pickerRequest =
@@ -232,7 +238,6 @@ private fun SocialGateAppCard(
     runtimeLabel: String?,
     expanded: Boolean,
     onToggleExpanded: () -> Unit,
-    onRuleEnabledChange: (String, Boolean) -> Unit,
     onMaxTriggersPerDayChange: (String, Int) -> Unit,
     onWindowStartRequest: () -> Unit,
     onWindowEndRequest: () -> Unit,
@@ -245,24 +250,15 @@ private fun SocialGateAppCard(
             modifier = Modifier.padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = app.displayName,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    StudyStatusBadge(
-                        text = status.label,
-                        tone = status.tone,
-                    )
-                }
-                Switch(
-                    checked = app.enabled,
-                    onCheckedChange = { enabled -> onRuleEnabledChange(app.packageName, enabled) },
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = app.displayName,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                StudyStatusBadge(
+                    text = status.label,
+                    tone = status.tone,
                 )
             }
             StudyProgressMeta(
@@ -388,7 +384,6 @@ private fun SocialGateInstalledApp.statusSummary(
     when {
         runtimeLabel == "Gate activo ahora" -> SocialGateCardStatus("Gate activo", StudyBadgeTone.Danger)
         runtimeLabel == "Desbloqueada para el foreground actual" -> SocialGateCardStatus("Desbloqueada en esta sesión", StudyBadgeTone.Success)
-        !enabled -> SocialGateCardStatus("Inactiva", StudyBadgeTone.Neutral)
         solvedToday >= maxTriggersPerDay -> SocialGateCardStatus("Cuota diaria completa", StudyBadgeTone.Warning)
         else -> SocialGateCardStatus("Lista para bloquear", StudyBadgeTone.Accent)
     }

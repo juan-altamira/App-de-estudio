@@ -9,16 +9,17 @@ import android.provider.Settings
 /**
  * Estado de los permisos/condiciones que necesita el gate social SIN accesibilidad:
  *  - "Acceso de uso" (PACKAGE_USAGE_STATS) para detectar la app en foreground.
- *  - "Mostrar sobre otras apps" (SYSTEM_ALERT_WINDOW) para dibujar el overlay del gate.
+ *  - "Mostrar sobre otras apps" (SYSTEM_ALERT_WINDOW) para que Android permita traer la Activity
+ *    al frente desde segundo plano. No se dibuja una ventana de superposición.
  *  - El servicio vigilante efectivamente corriendo.
  */
 data class SocialGateGuardStatus(
     val usageAccessGranted: Boolean,
-    val overlayGranted: Boolean,
+    val backgroundLaunchGranted: Boolean,
     val serviceRunning: Boolean,
 ) {
     /** Permisos listos: el servicio ya puede vigilar y bloquear. */
-    val permissionsReady: Boolean = usageAccessGranted && overlayGranted
+    val permissionsReady: Boolean = usageAccessGranted && backgroundLaunchGranted
 
     /** Todo en orden: permisos concedidos y servicio activo. */
     val fullyOperational: Boolean = permissionsReady && serviceRunning
@@ -43,7 +44,7 @@ fun canDrawOverlays(context: Context): Boolean = Settings.canDrawOverlays(contex
 fun getSocialGateGuardStatus(context: Context): SocialGateGuardStatus =
     SocialGateGuardStatus(
         usageAccessGranted = hasUsageStatsAccess(context),
-        overlayGranted = canDrawOverlays(context),
+        backgroundLaunchGranted = canDrawOverlays(context),
         serviceRunning = SocialGateMonitorService.isRunning,
     )
 

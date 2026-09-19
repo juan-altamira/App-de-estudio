@@ -3,6 +3,7 @@ package com.estudio.antiprocrastinacion.app.ui.navigation
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
@@ -10,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -55,6 +57,8 @@ import com.estudio.antiprocrastinacion.app.notification.consumeNotificationLaunc
 import com.estudio.antiprocrastinacion.app.socialgate.getSocialGateGuardStatus
 import com.estudio.antiprocrastinacion.app.socialgate.overlaySettingsIntent
 import com.estudio.antiprocrastinacion.app.socialgate.usageAccessSettingsIntent
+import com.estudio.antiprocrastinacion.app.socialgate.SocialGateActivityHost
+import com.estudio.antiprocrastinacion.app.socialgate.SocialGateOverlayScreen
 import com.estudio.antiprocrastinacion.app.socialgate.SocialGateRedirectBus
 import com.estudio.antiprocrastinacion.app.socialgate.SocialGateServiceController
 import com.estudio.antiprocrastinacion.app.ui.study.deep.DeepStudyConfigScreen
@@ -69,7 +73,20 @@ fun StudyApp() {
         val app = LocalContext.current.applicationContext as StudyApplication
         val container = app.container
         val navController = rememberNavController()
-        Surface(modifier = Modifier.fillMaxSize()) {
+        val activity = LocalActivity.current
+        val gatePrompt by SocialGateActivityHost.promptState.collectAsStateWithLifecycle()
+
+        LaunchedEffect(activity) {
+            SocialGateActivityHost.returnToPreviousApp.collect {
+                activity?.moveTaskToBack(true)
+            }
+        }
+        // Atrás no descarta un gate activo. Home/Recientes tampoco lo resuelven: el servicio
+        // vuelve a traer esta misma Activity al frente mientras la deuda siga viva.
+        BackHandler(enabled = gatePrompt != null) {}
+
+        Box(modifier = Modifier.fillMaxSize()) {
+            Surface(modifier = Modifier.fillMaxSize()) {
             // ── Global observer for social gate redirections ──
             // This runs regardless of which composable is active (BOOT, HOME, STUDY, etc.)
             val redirectSessionId by SocialGateRedirectBus.pendingSessionId.collectAsStateWithLifecycle()
@@ -84,11 +101,11 @@ fun StudyApp() {
                 android.util.Log.d("SocialGate", "StudyApp: navigation completed to study/$sessionId")
             }
 
-            NavHost(
-                navController = navController,
-                startDestination = NavRoutes.BOOT,
-                modifier = Modifier.fillMaxSize().background(androidx.compose.material3.MaterialTheme.colorScheme.background),
-            ) {
+                NavHost(
+                    navController = navController,
+                    startDestination = NavRoutes.BOOT,
+                    modifier = Modifier.fillMaxSize().background(androidx.compose.material3.MaterialTheme.colorScheme.background),
+                ) {
                 composable(NavRoutes.BOOT) {
                     val viewModel: AppLaunchViewModel = viewModel(factory = container.appLaunchViewModelFactory())
                     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -362,10 +379,6 @@ fun StudyApp() {
                         onBack = { navController.popBackStack() },
                         onOpenUsageAccessSettings = { context.startActivity(usageAccessSettingsIntent()) },
                         onOpenOverlaySettings = { context.startActivity(overlaySettingsIntent(context)) },
-                        onRuleEnabledChange = { pkg, enabled ->
-                            viewModel.updateRuleEnabled(pkg, enabled)
-                            if (enabled) SocialGateServiceController.ensureRunning(context)
-                        },
                         onMaxTriggersPerDayChange = viewModel::updateMaxTriggersPerDay,
                         onWindowStartMinutesChange = viewModel::updateWindowStartMinutes,
                         onWindowEndMinutesChange = viewModel::updateWindowEndMinutes,
@@ -457,6 +470,17 @@ fun StudyApp() {
                         onDismissTerminateSessionConfirmation = viewModel::dismissTerminateSessionConfirmation,
                     )
                 }
+                }
+            }
+
+            gatePrompt?.let { state ->
+                SocialGateOverlayScreen(
+                    state = state,
+                    onSubmitAnswer = SocialGateActivityHost::submitAnswer,
+                    onRevealAnswer = SocialGateActivityHost::revealAnswer,
+                    onContinueAfterFeedback = SocialGateActivityHost::continueAfterFeedback,
+                    onUseEscape = SocialGateActivityHost::useEscape,
+                )
             }
         }
     }

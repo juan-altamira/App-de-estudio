@@ -1,9 +1,11 @@
 package com.estudio.antiprocrastinacion
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.onNodeWithText
@@ -44,13 +46,12 @@ class SocialGateSettingsScreenTest {
                     guardStatus =
                         SocialGateGuardStatus(
                             usageAccessGranted = false,
-                            overlayGranted = false,
+                            backgroundLaunchGranted = false,
                             serviceRunning = false,
                         ),
                     onBack = {},
                     onOpenUsageAccessSettings = {},
                     onOpenOverlaySettings = {},
-                    onRuleEnabledChange = { _, _ -> },
                     onMaxTriggersPerDayChange = { _, _ -> },
                     onWindowStartMinutesChange = { _, _ -> },
                     onWindowEndMinutesChange = { _, _ -> },
@@ -59,6 +60,8 @@ class SocialGateSettingsScreenTest {
         }
 
         composeRule.onNodeWithText("Gate social").assertIsDisplayed()
+        composeRule.onNodeWithText("Conceder acceso de uso").assertIsDisplayed()
+        composeRule.onNodeWithText("Permitir reapertura en segundo plano").assertIsDisplayed()
         composeRule.onNode(hasScrollAction()).performScrollToNode(hasText("Editar configuración"))
         composeRule.onNodeWithText("Instagram").assertIsDisplayed()
         composeRule.onNodeWithText("Editar configuración").assertIsDisplayed()
@@ -90,13 +93,12 @@ class SocialGateSettingsScreenTest {
                     guardStatus =
                         SocialGateGuardStatus(
                             usageAccessGranted = true,
-                            overlayGranted = true,
+                            backgroundLaunchGranted = true,
                             serviceRunning = true,
                         ),
                     onBack = {},
                     onOpenUsageAccessSettings = {},
                     onOpenOverlaySettings = {},
-                    onRuleEnabledChange = { _, _ -> },
                     onMaxTriggersPerDayChange = { _, _ -> },
                     onWindowStartMinutesChange = { _, _ -> },
                     onWindowEndMinutesChange = { _, _ -> },
@@ -110,5 +112,7 @@ class SocialGateSettingsScreenTest {
         composeRule.onNodeWithText("Desde 08:00").performClick()
         composeRule.onNodeWithText("Hora de inicio").assertIsDisplayed()
         composeRule.onNodeWithText("Guardar").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Conceder acceso de uso").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Permitir reapertura en segundo plano").assertCountEquals(0)
     }
 }

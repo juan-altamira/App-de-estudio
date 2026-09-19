@@ -73,10 +73,10 @@ private fun manualFormatHint(format: ReviewedQuestionFormat): String =
         ReviewedQuestionFormat.MULTIPLE_CHOICE,
         ReviewedQuestionFormat.TRUE_FALSE,
         ReviewedQuestionFormat.CHOOSE_FALSE_STATEMENT,
-        -> "La app te la toma sola, todos los días y en los recordatorios."
+        -> "Puede aparecer en Tarjetas pendientes y en los accesos rápidos."
 
         ReviewedQuestionFormat.REVEAL_ANSWER ->
-            "Aparece solo cuando entrás a repasar a fondo. No cuenta para las preguntas que necesita la unidad."
+            "Aparece en Tarjetas pendientes y Modo profundo. No se usa en accesos que requieren corrección automática."
     }
 
 @Composable
@@ -271,15 +271,60 @@ private fun UnitStep(
     ) {
         item {
             Text(
-                text = "Dividí el curso en partes. Cada parte (unidad) agrupa un tema.",
+                text =
+                    if (state.courseIsExisting) {
+                        "Elegí una unidad para agregarle preguntas, o creá una unidad nueva. Las preguntas que ya existen no se modifican."
+                    } else {
+                        "Creá una unidad para agrupar preguntas del mismo tema."
+                    },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        val selectedExistingKeys = state.draft.units.map { it.key }.toSet()
+        val availableExistingUnits = state.existingUnits.filterNot { it.draftKey in selectedExistingKeys }
+        if (availableExistingUnits.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Unidades existentes",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            items(availableExistingUnits.size) { index ->
+                val option = availableExistingUnits[index]
+                StudySurfaceCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !state.isWorking) { viewModel.chooseExistingUnit(option) }
+                                .padding(18.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = option.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "Agregar preguntas sin tocar las existentes",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        StudyStatusBadge(text = "Agregar", tone = StudyBadgeTone.Accent)
+                    }
+                }
+            }
+        }
         if (state.draft.units.isNotEmpty()) {
             item {
                 Text(
-                    text = "Partes de este curso",
+                    text = "Unidades que vas a guardar",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -327,7 +372,7 @@ private fun UnitStep(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        text = "Agregar una parte",
+                        text = "Crear una unidad nueva",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -336,7 +381,7 @@ private fun UnitStep(
                         value = newTitle,
                         onValueChange = { newTitle = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Nombre de la parte") },
+                        label = { Text("Nombre de la unidad") },
                         placeholder = { Text("Ej: Fotosíntesis") },
                         singleLine = true,
                         enabled = !state.isWorking,
@@ -378,7 +423,7 @@ private fun QuestionsStep(
     val unit = state.currentUnit
     if (unit == null) {
         Text(
-            text = "Elegí una parte para agregar preguntas.",
+            text = "Elegí una unidad para agregar preguntas.",
             modifier = Modifier.padding(20.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -432,7 +477,7 @@ private fun QuestionsStep(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 StudySecondaryButton(
-                    text = "Otra parte",
+                    text = "Otra unidad",
                     leadingIcon = Icons.Rounded.Add,
                     onClick = viewModel::goToAddUnit,
                     enabled = !state.isWorking,
@@ -463,7 +508,7 @@ private fun ReadinessMeter(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             StudyStatusBadge(
-                text = "${readiness.quickComplete} de $MANUAL_MIN_QUICK_QUESTIONS preguntas rápidas",
+                text = readinessBadgeText(readiness),
                 tone = if (ready) StudyBadgeTone.Success else StudyBadgeTone.Accent,
             )
             Text(
@@ -697,7 +742,7 @@ private fun AlmostReadyDialog(
         title = { Text("Te falta un pasito 🙂") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Para que te sirvan para estudiar, cada parte necesita 4 preguntas con opciones:")
+                Text("Para guardar, cada unidad necesita al menos una pregunta completa y ninguna a medio completar:")
                 pending.forEach { unit ->
                     StudySecondaryButton(
                         text = "${unit.title} — ${unitReadinessShort(unit)}",
@@ -754,10 +799,8 @@ private fun markedLabel(chooseFalse: Boolean): String = if (chooseFalse) "Es la 
 private fun unitReadinessShort(readiness: ManualUnitReadiness): String =
     when {
         readiness.isReady -> "Lista para tus repasos"
-        readiness.needQuick > 0 && readiness.incompleteCount > 0 ->
-            "Faltan ${readiness.needQuick} rápidas y completar ${readiness.incompleteCount}"
-        readiness.needQuick > 0 -> "Faltan ${readiness.needQuick} preguntas rápidas"
-        else -> "Completá ${readiness.incompleteCount} pregunta(s)"
+        readiness.completeCount == 0 && readiness.incompleteCount == 0 -> "Agregá una pregunta"
+        else -> "Completá ${readiness.incompleteCount} ${questionWord(readiness.incompleteCount)}"
     }
 
 private fun readinessLongMessage(
@@ -766,11 +809,18 @@ private fun readinessLongMessage(
 ): String =
     when {
         readiness.isReady ->
-            "✅ «$unitTitle» está lista. La vas a repasar cada día y te la vamos a recordar en el celular."
-        readiness.needQuick == 1 ->
-            "Te falta 1 pregunta con opciones para que «$unitTitle» sirva para estudiar."
-        readiness.needQuick > 1 ->
-            "Te faltan ${readiness.needQuick} preguntas con opciones para que «$unitTitle» sirva para estudiar."
-        else ->
-            "Terminá ${readiness.incompleteCount} pregunta(s) que quedaron sin completar."
+            "✅ «$unitTitle» está lista. Sus preguntas completas van a entrar en Tarjetas pendientes."
+        readiness.completeCount == 0 && readiness.incompleteCount == 0 ->
+            "Agregá al menos una pregunta completa a «$unitTitle»."
+        else -> "Terminá ${readiness.incompleteCount} ${questionWord(readiness.incompleteCount)} que quedaron sin completar."
     }
+
+private fun readinessBadgeText(readiness: ManualUnitReadiness): String =
+    when {
+        readiness.completeCount == 0 && readiness.incompleteCount == 0 -> "Sin preguntas"
+        readiness.incompleteCount == 0 ->
+            if (readiness.completeCount == 1) "1 pregunta lista" else "${readiness.completeCount} preguntas listas"
+        else -> "${readiness.completeCount} listas · ${readiness.incompleteCount} incompletas"
+    }
+
+private fun questionWord(count: Int): String = if (count == 1) "pregunta" else "preguntas"

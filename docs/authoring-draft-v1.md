@@ -278,6 +278,10 @@ Study role labels in this screen are normal authored question roles:
 
 The editable question-bank compiler must not generate `RESCUE`. Rescue remains an auxiliary fallback after failures, not a normal imported question role.
 
+The manual course builder uses this reviewed question-bank profile and must allow a unit with at least one complete question of any supported format. The four-item strict friction-1 target is not a save gate: it only determines external-surface readiness. A normal `REVEAL_ANSWER` compiles to real `IN_APP_QUICK` plus `IN_APP_DEEP` debt and therefore remains eligible for `Tarjetas pendientes`, even when the unit has no strict easy opener.
+
+When the manual builder targets an existing unit, the compilation context keeps the exact existing course/unit identity and metadata but assigns a fresh outcome, node and item namespace to the new batch. The import remains additive under `REVIEWED_QUESTION_BANK`: existing questions are not included in the incoming batch, overwritten, archived or deleted, and their progress remains attached to their original IDs.
+
 The compiler derives deterministic content IDs:
 - `courseId = courseKey`
 - `unitId = courseKey__unitKey`

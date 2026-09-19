@@ -32,6 +32,7 @@ class EditableImportPreparationService @Inject constructor(
     suspend fun prepare(
         draft: ReviewedEditableImportDraft,
         sourceReport: ValidationReport = ValidationReport(emptyList(), emptyList()),
+        compilationContext: ReviewedQuestionBankCompilationContext = ReviewedQuestionBankCompilationContext(),
     ): EditableImportPreparationResult {
         val draftReport = draftValidator.validate(draft)
         if (!(sourceReport + draftReport).canImport) {
@@ -43,7 +44,7 @@ class EditableImportPreparationService @Inject constructor(
                 contentPackageJson = null,
             )
         }
-        val contentPackage = compiler.compile(draft, timeProvider.now())
+        val contentPackage = compiler.compile(draft, timeProvider.now(), compilationContext)
         val finalReport =
             importValidator.validate(
                 contentPackage = contentPackage,

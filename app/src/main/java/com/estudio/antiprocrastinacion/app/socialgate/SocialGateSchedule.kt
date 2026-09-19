@@ -33,6 +33,7 @@ object SocialGateSchedule {
         val safeCount = rule.maxTriggersPerDay.coerceIn(1, min(MAX_TRIGGERS_PER_DAY, maxCountForWindow))
 
         return rule.copy(
+            enabled = true,
             maxTriggersPerDay = safeCount,
             requiredCorrectAnswers = rule.requiredCorrectAnswers.coerceIn(1, MAX_REQUIRED_CORRECT_ANSWERS),
             windowStartMinutes = safeStart,

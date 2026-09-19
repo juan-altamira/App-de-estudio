@@ -9,7 +9,7 @@
 
 You are working on a local Android MVP for an anti-procrastination study app.
 
-Current repo scope now also includes local cognitive notification scheduling, configuration, exact first-interaction notification-to-study handoff for `Tarjetas pendientes` (real pending opener or `anzuelo` when that is the visible opener), an implemented social gate built on AccessibilityService overlay that reuses/opens the real `Tarjetas pendientes` QUICK session, blocks only when real pending debt exists, never creates gate-only filler questions, preserves `DEEP`/`DRAIN` sessions in their own slots, has a foreground-only escape token with visible remaining uses, per-app settings with daily frequency and time windows, a legacy real-only `SOCIAL_GATE` scheduler path kept for compatibility, an AI-safe `AuthoringDraftPackage` import preparation pipeline that compiles structured pedagogical drafts into the final `ContentPackageDto`, an explicit additive `content_package` file mode for adding units/questions without archiving sibling nodes, and a reviewed editable text import flow that turns natural text into a human-checked question-bank draft before compiling it into `ContentPackageDto`.
+Current repo scope now also includes local cognitive notification scheduling, configuration, exact first-interaction notification-to-study handoff for `Tarjetas pendientes` (real pending opener or `anzuelo` when that is the visible opener), an implemented social gate driven by `UsageStatsManager` + a persistent foreground monitor that reimposes the single Activity (without AccessibilityService or `TYPE_APPLICATION_OVERLAY`) and reuses/opens the real `Tarjetas pendientes` QUICK session, blocks only when real pending debt exists, never creates gate-only filler questions, preserves `DEEP`/`DRAIN` sessions in their own slots, has a foreground-only escape token with visible remaining uses, per-app settings with daily frequency and time windows, permanent enablement across supported social apps without an off toggle in UI or repository, a legacy real-only `SOCIAL_GATE` scheduler path kept for compatibility, an AI-safe `AuthoringDraftPackage` import preparation pipeline that compiles structured pedagogical drafts into the final `ContentPackageDto`, an explicit additive `content_package` file mode for adding units/questions without archiving sibling nodes, and a reviewed editable text import flow that turns natural text into a human-checked question-bank draft before compiling it into `ContentPackageDto`.
 Alarm and widget remain outside the implemented scope until the roadmap says otherwise.
 
 Active-session contract now enforced in the repo:
@@ -24,6 +24,9 @@ Active-session contract now enforced in the repo:
 - `Contenido` must expose one hierarchy layer at a time, with upper context reduced to breadcrumb/header form, user-visible terminology limited to `Curso`, `Unidad`, `Pregunta`/`Tarjeta`, and administrative actions moved into contextual menus
 - AI-assisted content should enter through `AuthoringDraftPackage`; `ContentPackageDto` remains the final internal/importer contract
 - natural text may enter only through the reviewed editable import screen; that screen must expose a single source-text input for extraction, then show an editable detected draft where the user can correct visible course/unit/question fields, add questions, or remove questions before compilation, and the compiler may import only complete fields present in that reviewed draft
+- the manual course builder may save a unit with one or more complete questions of any supported format; four strict friction-1 questions are an external-surface readiness signal, never a manual-save requirement
+- the manual course builder may add questions to an existing unit only through an additive isolated batch with new node/item identities; existing questions, metadata and progress must remain untouched
+- a normal `Con tus palabras` question created in the manual builder is real `Tarjetas pendientes` debt through `IN_APP_QUICK`, while remaining excluded from auto-graded external surfaces
 - import preflight may accept recognized `schema` aliases only when the payload already satisfies the corresponding contract; a flat `QuestionDraftPackage`/`questions[]` package must fail instead of being converted by guessing nodes
 - the compiler may derive runtime mechanics, but must not invent missing node semantics, facets, common errors, roles or coverage
 - reviewed editable imports use a separate validation profile; `ContentPackageDto` must not receive source/import profile fields
@@ -133,6 +136,7 @@ Do not do any of the following without explicit approval:
 - make notification diverge from the exact first visible `Tarjetas pendientes` interaction
 - make notification collapse into a generic pending reminder when an exact first visible interaction exists
 - make `SOCIAL_GATE` count attempts instead of required correct answers
+- make `SOCIAL_GATE` disableable or expose an off toggle for supported social apps
 - make the social gate create gate-only filler questions or block when `Tarjetas pendientes` has no real pending debt
 - make Quick schedule `rescue` directly in its initial packet
 - make Quick repeat the same node/item before first-pass scheduled coverage when unseen scheduled items remain

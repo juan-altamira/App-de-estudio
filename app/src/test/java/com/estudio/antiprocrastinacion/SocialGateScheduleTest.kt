@@ -103,6 +103,25 @@ class SocialGateScheduleTest {
         assertThat(normalized.windowEndMinutes).isEqualTo(23 * 60 + 59)
         assertThat(normalized.maxTriggersPerDay).isEqualTo(2)
         assertThat(normalized.requiredCorrectAnswers).isEqualTo(10)
+        assertThat(normalized.enabled).isTrue()
+    }
+
+    @Test
+    fun `normalization forces enabled to true even if input rule had enabled false`() {
+        val normalized =
+            SocialGateSchedule.normalizeRule(
+                SocialGateRule(
+                    packageName = "com.instagram.android",
+                    displayName = "Instagram",
+                    enabled = false,
+                    maxTriggersPerDay = 1,
+                    requiredCorrectAnswers = 3,
+                    windowStartMinutes = 0,
+                    windowEndMinutes = 22 * 60,
+                ),
+            )
+
+        assertThat(normalized.enabled).isTrue()
     }
 
     private fun utcTime(instant: String): Long = java.time.Instant.parse(instant).toEpochMilli()

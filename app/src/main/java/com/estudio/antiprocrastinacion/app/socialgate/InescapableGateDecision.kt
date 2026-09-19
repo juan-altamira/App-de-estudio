@@ -34,4 +34,25 @@ object InescapableGateDecision {
         if (foregroundPackage != null && foregroundPackage in alwaysAllowed) return false
         return true
     }
+
+    /**
+     * Decide si el servicio debe volver a traer la Activity del gate al frente.
+     *
+     * El paquete reportado puede seguir siendo el propio durante unos milisegundos después de
+     * Home/Recientes. Por eso manda la visibilidad real de la Activity. Teléfono y pantalla de
+     * bloqueo siempre tienen prioridad.
+     */
+    fun shouldBringStudyActivityToFront(
+        hasActiveGate: Boolean,
+        isStudyActivityInteractive: Boolean,
+        isScreenInteractive: Boolean,
+        isKeyguardLocked: Boolean,
+        foregroundPackage: String?,
+        alwaysAllowed: Set<String> = ALWAYS_ALLOWED_PACKAGES,
+    ): Boolean {
+        if (!hasActiveGate || isStudyActivityInteractive) return false
+        if (!isScreenInteractive || isKeyguardLocked) return false
+        if (foregroundPackage != null && foregroundPackage in alwaysAllowed) return false
+        return true
+    }
 }

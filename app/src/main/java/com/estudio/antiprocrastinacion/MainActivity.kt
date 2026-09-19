@@ -5,6 +5,7 @@ import android.os.StrictMode
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.estudio.antiprocrastinacion.app.socialgate.SocialGateActivityHost
 import com.estudio.antiprocrastinacion.app.ui.navigation.StudyApp
 
 class MainActivity : ComponentActivity() {
@@ -35,5 +36,20 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        SocialGateActivityHost.onActivityResumed()
+    }
+
+    override fun onPause() {
+        SocialGateActivityHost.onActivityPaused()
+        super.onPause()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        SocialGateActivityHost.onActivityWindowFocusChanged(hasFocus)
     }
 }
