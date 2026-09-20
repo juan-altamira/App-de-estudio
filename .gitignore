@@ -13,3 +13,4 @@ captures/
 # Herramientas ajenas al proyecto que quedaron en el directorio (no son fuente)
 /squashfs-root/
 /AM-INSTALLER
+backup_safety/
