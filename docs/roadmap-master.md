@@ -1399,6 +1399,7 @@ Esta sección existe para poder consultar rápido el estado real sin releer todo
   reimposición de la Activity única sin `AccessibilityService` ni ventana
   `TYPE_APPLICATION_OVERLAY`
 - `[x]` gate social permanentemente activo sin switch de apagado en UI ni repositorio, garantizando reglas activas ineludibles para todas las redes soportadas (Instagram, TikTok, X) con horarios y frecuencias configurables
+- `[x]` gate social con restauración inmediata al boot (boot-persistence de sesión activa pendiente) y límite de 2 comodines de escape por ventana móvil de 7 días
 - `[ ]` widget
 - `[ ]` alarma
 - `[ ]` web sobria (cuando se llegue a esta parte hay que discutir bien el stack)

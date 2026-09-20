@@ -123,6 +123,12 @@ class SocialGateMonitorService : Service() {
         pollJob?.cancel()
         pollJob =
             serviceScope.launch {
+                coordinator.restoreActiveGateOnStartup()?.let { result ->
+                    if (result is SocialGateCoordinatorResult.ShowPrompt) {
+                        presentGate(result.state)
+                        ensureGateActivityVisible(result.state, lastForegroundPackage)
+                    }
+                }
                 while (isActive) {
                     runCatching { pollOnce() }
                         .onFailure { error ->

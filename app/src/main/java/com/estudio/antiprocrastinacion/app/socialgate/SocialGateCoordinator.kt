@@ -84,6 +84,48 @@ class SocialGateCoordinator(
 ) {
     private var currentPromptState: SocialGatePromptState? = null
 
+    /**
+     * Restaura de forma inmediata el gate activo si el servicio/dispositivo se reinició con
+     * un bloqueo pendiente no resuelto. Permite que el monitor imponga la Activity sin esperar
+     * a que el usuario vuelva a abrir la aplicación objetivo.
+     */
+    suspend fun restoreActiveGateOnStartup(): SocialGateCoordinatorResult? {
+        val current = currentPromptState
+        if (current != null) return SocialGateCoordinatorResult.ShowPrompt(current)
+
+        val now = timeProvider.now()
+        val runtime = socialGateRepository.getRuntimeState()
+        if (runtime.phase != SocialGateRuntimePhase.ACTIVE_GATE) return null
+
+        val targetPackage = runtime.targetPackageName ?: return null
+        val rule =
+            socialGateRepository.getRule(targetPackage)
+                ?: SocialGateCatalog.supportedApps
+                    .firstOrNull { it.packageName == targetPackage }
+                    ?.let { SocialGateCatalog.defaultRule(it) }
+
+        if (rule == null) {
+            clearStaleGateState(now = now, lastForegroundPackageName = targetPackage)
+            return null
+        }
+
+        val sessionId = runtime.activeGateSessionId
+        val activeSession = if (sessionId != null) sessionRepository.getActiveSessionById(sessionId) else null
+
+        if (activeSession == null) {
+            clearStaleGateState(now = now, lastForegroundPackageName = targetPackage)
+            return null
+        }
+
+        val restoredPrompt = restoreActiveGatePrompt(rule, activeSession, runtime, now)
+        if (restoredPrompt == null) {
+            clearStaleGateState(now = now, lastForegroundPackageName = targetPackage)
+            return null
+        }
+        log("restored active gate on startup session=${restoredPrompt.prompt.session.sessionId} target=$targetPackage")
+        return SocialGateCoordinatorResult.ShowPrompt(restoredPrompt)
+    }
+
     suspend fun onTargetForegroundStable(rule: SocialGateRule): SocialGateCoordinatorResult {
         val now = timeProvider.now()
         var runtime = socialGateRepository.getRuntimeState()

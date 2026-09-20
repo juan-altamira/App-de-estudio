@@ -662,7 +662,7 @@ class SocialGateCoordinatorTest {
 
         val firstGate = coordinator.onTargetForegroundStable(rule)
         assertThat(firstGate).isInstanceOf(SocialGateCoordinatorResult.ShowPrompt::class.java)
-        assertThat((firstGate as SocialGateCoordinatorResult.ShowPrompt).state.escape.remaining).isEqualTo(1)
+        assertThat((firstGate as SocialGateCoordinatorResult.ShowPrompt).state.escape.remaining).isEqualTo(2)
 
         val escaped = coordinator.useEscape()
         assertThat(escaped).isEqualTo(SocialGateCoordinatorResult.HideOverlay)
@@ -677,9 +677,20 @@ class SocialGateCoordinatorTest {
 
         assertThat(secondGate).isInstanceOf(SocialGateCoordinatorResult.ShowPrompt::class.java)
         val secondState = (secondGate as SocialGateCoordinatorResult.ShowPrompt).state
-        assertThat(secondState.escape.canUse).isFalse()
-        assertThat(secondState.escape.remaining).isEqualTo(0)
-        assertThat(sessionEngine.startQuickCalls).isEqualTo(2)
+        assertThat(secondState.escape.canUse).isTrue()
+        assertThat(secondState.escape.remaining).isEqualTo(1)
+
+        val secondEscaped = coordinator.useEscape()
+        assertThat(secondEscaped).isEqualTo(SocialGateCoordinatorResult.HideOverlay)
+        assertThat(socialGateRepository.runtimeState.escapeUsesAt).hasSize(2)
+
+        coordinator.onNonTargetForegroundStable("com.android.launcher")
+        val thirdGate = coordinator.onTargetForegroundStable(rule)
+        assertThat(thirdGate).isInstanceOf(SocialGateCoordinatorResult.ShowPrompt::class.java)
+        val thirdState = (thirdGate as SocialGateCoordinatorResult.ShowPrompt).state
+        assertThat(thirdState.escape.canUse).isFalse()
+        assertThat(thirdState.escape.remaining).isEqualTo(0)
+        assertThat(sessionEngine.startQuickCalls).isEqualTo(3)
         assertThat(sessionEngine.startSocialGateCalls).isEqualTo(0)
     }
 
@@ -709,7 +720,10 @@ class SocialGateCoordinatorTest {
 
         coordinatorAtUse.onTargetForegroundStable(rule)
         assertThat(coordinatorAtUse.useEscape()).isEqualTo(SocialGateCoordinatorResult.HideOverlay)
-        assertThat(socialGateRepository.runtimeState.escapeUsesAt).hasSize(1)
+        coordinatorAtUse.onNonTargetForegroundStable("com.android.launcher")
+        coordinatorAtUse.onTargetForegroundStable(rule)
+        assertThat(coordinatorAtUse.useEscape()).isEqualTo(SocialGateCoordinatorResult.HideOverlay)
+        assertThat(socialGateRepository.runtimeState.escapeUsesAt).hasSize(2)
         coordinatorAtUse.onNonTargetForegroundStable("com.android.launcher")
 
         // El usuario atrasa el reloj 2 dias para intentar reabrir el comodin.
@@ -758,8 +772,12 @@ class SocialGateCoordinatorTest {
         coordinatorAtUse.onTargetForegroundStable(rule)
         coordinatorAtUse.useEscape()
         coordinatorAtUse.onNonTargetForegroundStable("com.android.launcher")
+        coordinatorAtUse.onTargetForegroundStable(rule)
+        coordinatorAtUse.useEscape()
+        coordinatorAtUse.onNonTargetForegroundStable("com.android.launcher")
+        assertThat(socialGateRepository.runtimeState.escapeUsesAt).hasSize(2)
 
-        // Una semana mas tarde (la espera maxima) el comodin vuelve a estar disponible.
+        // Una semana mas tarde (la espera maxima) los comodines vuelven a estar disponibles.
         val nextWeek = useTime + 7L * 24 * 60 * 60 * 1000 + 60_000
         val coordinatorNextWeek =
             SocialGateCoordinator(
@@ -775,7 +793,98 @@ class SocialGateCoordinatorTest {
         assertThat(gateNextWeek).isInstanceOf(SocialGateCoordinatorResult.ShowPrompt::class.java)
         val state = (gateNextWeek as SocialGateCoordinatorResult.ShowPrompt).state
         assertThat(state.escape.canUse).isTrue()
-        assertThat(state.escape.remaining).isEqualTo(1)
+        assertThat(state.escape.remaining).isEqualTo(2)
+    }
+
+    @Test
+    fun `restoreActiveGateOnStartup restores prompt when runtime had an active gate session`() = runTest {
+        val rule = sampleRule()
+        val socialGateRepository = FakeCoordinatorSocialGateRepository(initialRules = listOf(rule))
+        val quickSession =
+            sampleSocialGateSession(
+                "reboot-quick-session",
+                surface = Surface.IN_APP_QUICK,
+                mode = SessionMode.QUICK,
+                goalCorrectCount = 4,
+                correctCount = 1,
+            )
+        val prompt = sampleSocialGatePrompt(quickSession)
+        val sessionEngine = FakeCoordinatorSessionEngine(startPrompt = prompt, resumePrompt = prompt)
+        val sessionRepository = FakeCoordinatorSessionRepository(quickSession)
+        val now = utcTime("2026-04-20T10:00:00Z")
+        val coordinator =
+            SocialGateCoordinator(
+                socialGateRepository = socialGateRepository,
+                sessionRepository = sessionRepository,
+                sessionEngine = sessionEngine,
+                timeProvider = FixedCoordinatorTimeProvider(now),
+                zoneId = zoneId,
+                logger = {},
+            )
+
+        socialGateRepository.updateRuntimeState {
+            it.copy(
+                phase = SocialGateRuntimePhase.ACTIVE_GATE,
+                targetPackageName = "com.instagram.android",
+                activeGateSessionId = "reboot-quick-session",
+                gateUnlockBaselineCorrectCount = 0,
+                gateUnlockRequiredCorrectAnswers = 3,
+            )
+        }
+
+        val restored = coordinator.restoreActiveGateOnStartup()
+        assertThat(restored).isInstanceOf(SocialGateCoordinatorResult.ShowPrompt::class.java)
+        val promptState = (restored as SocialGateCoordinatorResult.ShowPrompt).state
+        assertThat(promptState.targetPackageName).isEqualTo("com.instagram.android")
+        assertThat(promptState.prompt.session.sessionId).isEqualTo("reboot-quick-session")
+        assertThat(coordinator.activeGatePrompt()).isNotNull()
+    }
+
+    @Test
+    fun `restoreActiveGateOnStartup returns null when runtime is idle`() = runTest {
+        val socialGateRepository = FakeCoordinatorSocialGateRepository()
+        val coordinator =
+            SocialGateCoordinator(
+                socialGateRepository = socialGateRepository,
+                sessionRepository = FakeCoordinatorSessionRepository(null),
+                sessionEngine = FakeCoordinatorSessionEngine(),
+                timeProvider = FixedCoordinatorTimeProvider(utcTime("2026-04-20T10:00:00Z")),
+                zoneId = zoneId,
+                logger = {},
+            )
+
+        val restored = coordinator.restoreActiveGateOnStartup()
+        assertThat(restored).isNull()
+        assertThat(coordinator.activeGatePrompt()).isNull()
+    }
+
+    @Test
+    fun `restoreActiveGateOnStartup clears stale state when referenced session does not exist`() = runTest {
+        val rule = sampleRule()
+        val socialGateRepository = FakeCoordinatorSocialGateRepository(initialRules = listOf(rule))
+        val coordinator =
+            SocialGateCoordinator(
+                socialGateRepository = socialGateRepository,
+                sessionRepository = FakeCoordinatorSessionRepository(null),
+                sessionEngine = FakeCoordinatorSessionEngine(),
+                timeProvider = FixedCoordinatorTimeProvider(utcTime("2026-04-20T10:00:00Z")),
+                zoneId = zoneId,
+                logger = {},
+            )
+
+        socialGateRepository.updateRuntimeState {
+            it.copy(
+                phase = SocialGateRuntimePhase.ACTIVE_GATE,
+                targetPackageName = "com.instagram.android",
+                activeGateSessionId = "non-existent-session",
+            )
+        }
+
+        val restored = coordinator.restoreActiveGateOnStartup()
+        assertThat(restored).isNull()
+        assertThat(coordinator.activeGatePrompt()).isNull()
+        assertThat(socialGateRepository.runtimeState.phase).isEqualTo(SocialGateRuntimePhase.IDLE)
+        assertThat(socialGateRepository.runtimeState.activeGateSessionId).isNull()
     }
 
     @Test

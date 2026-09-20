@@ -34,7 +34,10 @@ solo para que Android permita el background Activity launch.
 
 GATE INESCAPABLE: el gate se dispara al abrir una app social, pero una vez arriba
 la Activity vuelve al frente si se intenta ir a Home, Recientes, notificaciones u
-otra app, hasta resolverlo (estudiar) o usar el comodín de escape. El monitor pulsa
+otra app, hasta resolverlo (estudiar) o usar el comodín de escape. Si el dispositivo
+o el proceso se reinicia con un gate activo pendiente, `SocialGateMonitorService`
+restaura inmediatamente el prompt en el arranque (`restoreActiveGateOnStartup`) y vuelve a
+traer la Activity al frente al prender la pantalla. El monitor pulsa
 cada 500 ms y limita `startActivity` a un intento cada 750 ms para no producir una
 tormenta de relanzamientos. El sondeo comienza solo después de recibir la primera
 foto de reglas y vuelve a evaluar el foreground cuando esas reglas cambian, incluso
@@ -120,7 +123,7 @@ repaso:
 
 El limite vive en `SocialGateEscape.MAX_USES_PER_WEEK`.
 
-- 1 uso por ventana movil de 7 dias: una vez usado, no vuelve hasta que ese uso cumple
+- 2 usos por ventana movil de 7 dias: una vez usados ambos, no vuelven hasta que cada uso cumple
   7 dias (maximo 1 semana de espera).
 - Si no queda uso, el boton deja de mostrarse.
 - Los usos quedan registrados en `SocialGateRuntimeState.escapeUsesAt`.
