@@ -135,9 +135,7 @@ fun SocialGateOverlayScreen(
                         .padding(8.dp),
             ) {
                 Text(
-                    // Sin contador: el botón solo aparece cuando hay 1 uso disponible
-                    // (1 por semana). Si no queda uso, el bloque entero no se muestra.
-                    text = "Escape",
+                    text = "Escape (${state.escape.remaining})",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -215,21 +213,25 @@ private fun GateEscapeConfirm(
     }
 }
 
-private fun escapeDialogMessage(
+internal fun escapeDialogMessage(
     escape: SocialGateEscapeInfo,
     appDisplayName: String,
 ): String =
     if (escape.canUse) {
         buildString {
             append("Vas a desbloquear $appDisplayName sin terminar el repaso.\n\n")
-            append("Es tu única salida de emergencia de la semana.")
+            if (escape.remaining > 1) {
+                append("Tenés ${escape.remaining} comodines de escape disponibles esta semana.")
+            } else {
+                append("Este es tu último comodín de escape disponible esta semana.")
+            }
             escape.nextAvailableLabel?.let {
-                append("\n\nSi la usás ahora, vas a poder volver a usarla recién el $it.")
+                append("\n\nSi lo usás ahora, vas a poder volver a usarlo recién el $it.")
             }
         }
     } else {
         val dia = escape.nextAvailableLabel ?: "la próxima semana"
-        "Ya usaste tu salida de emergencia de esta semana.\n\nVas a poder usarla de nuevo el $dia."
+        "Ya usaste tus comodines de escape de esta semana.\n\nVas a poder usar uno de nuevo el $dia."
     }
 
 @Composable

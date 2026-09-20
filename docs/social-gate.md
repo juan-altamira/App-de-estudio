@@ -111,10 +111,9 @@ sesion QUICK, no un objetivo artificial de "correctas por gate".
 El comodin de escape permite desbloquear la app social actual sin terminar el
 repaso:
 
-- aparece pequeno, en la esquina inferior del gate, solo si hay un uso disponible;
-- el texto del boton es solo `Escape`, sin contador: si esta visible se puede usar; si
-  no, no se muestra;
-- al tocarlo abre confirmacion con la proxima fecha disponible;
+- aparece pequeño, en la esquina inferior del gate, solo si hay usos disponibles;
+- el texto del botón muestra `Escape (X)` indicando los usos restantes disponibles (`Escape (2)` o `Escape (1)`); si no queda uso, no se muestra;
+- al tocarlo abre confirmación detallando cuántos usos quedan o la próxima fecha disponible;
 - al confirmar, emite un token solo para el foreground actual;
 - no completa la sesion de estudio;
 - no otorga credito de SR;
